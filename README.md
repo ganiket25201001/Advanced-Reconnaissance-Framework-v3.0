@@ -113,8 +113,8 @@ The script automatically installs these tools if missing:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/recon-framework.git
-cd recon-framework
+git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
+cd Advanced-Reconnaissance-Framework-v3.0
 ```
 
 ### 2. Make Executable
