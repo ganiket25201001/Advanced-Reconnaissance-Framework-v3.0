@@ -8,31 +8,65 @@
 </p>
 
 <p align="center">
-  <strong>A comprehensive, enterprise-grade reconnaissance and vulnerability scanning framework with WAF bypass capabilities and multi-target support.</strong>
+  <strong>Enterprise-grade reconnaissance and vulnerability scanning framework with WAF bypass, multi-target support, and automated setup.</strong>
 </p>
 
 <p align="center">
-  🔐 <strong>Requires Sudo Privileges</strong> | 📁 <strong>Multi-Target Support</strong> | 🛡️ <strong>WAF Bypass</strong>
+  🔐 <strong>Requires Sudo</strong> | 📁 <strong>Multi-Target</strong> | 🛡️ <strong>WAF Bypass</strong> | ⚡ <strong>One-Command Install</strong>
 </p>
 
 ---
 
 ## 📋 Table of Contents
 
-- [Features](#-features)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [Usage](#-usage)
-- [Configuration](#-configuration)
-- [Output Structure](#-output-structure)
-- [API Keys Setup](#-api-keys-setup)
-- [WAF Bypass Techniques](#-waf-bypass-techniques)
-- [Batch Processing](#-batch-processing)
-- [Notifications](#-notifications)
-- [Troubleshooting](#-troubleshooting)
-- [Legal Disclaimer](#-legal-disclaimer)
-- [Contributing](#-contributing)
+- [🚀 Quick Start](#-quick-start)
+- [✨ Features](#-features)
+- [📦 Requirements](#-requirements)
+- [🛠️ Installation](#-installation)
+- [⚙️ Configuration](#️-configuration)
+- [📖 Usage](#-usage)
+- [📁 Output Structure](#-output-structure)
+- [🔑 API Keys Setup](#-api-keys-setup)
+- [🛡️ WAF Bypass](#️-waf-bypass)
+- [📊 Batch Processing](#-batch-processing)
+- [🔔 Notifications](#-notifications)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [⚠️ Legal Disclaimer](#-legal-disclaimer)
+- [🤝 Contributing](#-contributing)
+
+---
+
+## 🚀 Quick Start
+
+### One-Command Installation & Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0git
+cd recon-framework
+
+# Run one-command installer (requires sudo)
+sudo ./install.sh
+
+# Run interactive setup wizard (as regular user)
+./setup_config.sh
+
+# Start scanning!
+sudo ./recon.sh example.com
+```
+
+### Alternative: Manual Setup
+
+```bash
+# Make scripts executable
+chmod +x recon.sh setup_config.sh install.sh
+
+# Run setup wizard
+./setup_config.sh
+
+# Scan a target
+sudo ./recon.sh example.com --waf-bypass --html-report
+```
 
 ---
 
@@ -42,8 +76,8 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Subdomain Enumeration** | Multi-source subdomain discovery (Subfinder, Amass, Assetfinder, AlterX, CRT.sh, APIs) |
-| **Port Scanning** | Fast port scanning with Naabu + optional Nmap deep scans |
+| **Subdomain Enumeration** | Multi-source discovery (Subfinder, Amass, Assetfinder, AlterX, CRT.sh, APIs) |
+| **Port Scanning** | Fast scanning with Naabu + optional Nmap deep scans |
 | **Live Host Detection** | HTTP/HTTPS probing with technology detection |
 | **URL Discovery** | Crawling with Katana, Gospider, Hakrawler + Archive sources |
 | **JS Analysis** | JavaScript file extraction and secret scanning |
@@ -61,14 +95,18 @@
 
 ### 🚀 Advanced Features
 
-- ✅ **Stealth Mode** - Reduced threads and rate limits for low-profile scanning
-- ✅ **Aggressive Mode** - Maximum intensity scanning (may trigger IDS/WAF)
-- ✅ **Resume Capability** - Resume interrupted scans
-- ✅ **Skip Completed** - Skip already processed targets in batch mode
-- ✅ **Tor Support** - Route traffic through Tor network
-- ✅ **Proxy Support** - HTTP/HTTPS proxy configuration
-- ✅ **Notifications** - Slack, Discord, Telegram integration
-- ✅ **API Integration** - Shodan, VirusTotal, SecurityTrails, GitHub, and more
+| Feature | Description |
+|---------|-------------|
+| **🔐 Stealth Mode** | Reduced threads and rate limits for low-profile scanning |
+| **💥 Aggressive Mode** | Maximum intensity scanning (may trigger IDS/WAF) |
+| **🔄 Resume Capability** | Resume interrupted scans |
+| **⏭️ Skip Completed** | Skip already processed targets in batch mode |
+| **🧅 Tor Support** | Route traffic through Tor network |
+| **🌐 Proxy Support** | HTTP/HTTPS proxy configuration |
+| **📬 Notifications** | Slack, Discord, Telegram integration |
+| **🔌 API Integration** | Shodan, VirusTotal, SecurityTrails, GitHub, and more |
+| **⚙️ Auto Configuration** | Interactive setup wizard for easy configuration |
+| **📦 One-Command Install** | Full installation with single command |
 
 ---
 
@@ -110,82 +148,137 @@ The script automatically installs these tools if missing:
 
 ## 🛠️ Installation
 
-### 1. Clone the Repository
+### Option 1: One-Command Installer (Recommended)
 
 ```bash
-git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
-cd Advanced-Reconnaissance-Framework-v3.0
+# Clone repository
+git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0git
+cd recon-framework
+
+# Run installer (requires sudo)
+sudo ./install.sh
+
+# Run setup wizard (as regular user)
+./setup_config.sh
 ```
 
-### 2. Make Executable
+### Option 2: Manual Installation
 
 ```bash
-chmod +x recon.sh
-```
+# 1. Clone the repository
+git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0git
+cd recon-framework
 
-### 3. Install System Dependencies
+# 2. Make scripts executable
+chmod +x recon.sh setup_config.sh
 
-```bash
-# Update package list
+# 3. Install system dependencies
 sudo apt-get update
-
-# Install core dependencies
 sudo apt-get install -y git curl jq wget python3 python3-pip
-```
 
-### 4. Install Go (if not installed)
-
-```bash
-# Download and install Go
+# 4. Install Go (if not installed)
 wget https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.bashrc
 source ~/.bashrc
+
+# 5. Run setup wizard
+./setup_config.sh
 ```
 
-### 5. Verify Installation
+### Option 3: Docker (Coming Soon)
+
+```bash
+# Docker support planned for v3.1
+docker pull recon-framework:latest
+docker run -it recon-framework ./recon.sh example.com
+```
+
+### Verify Installation
 
 ```bash
 # Check Go installation
 go version
 
-# Run script help
+# Check script help
 sudo ./recon.sh --help
+
+# Verify setup
+ls -la ~/.recon_config ~/api_keys.json
 ```
 
 ---
 
-## ⚡ Quick Start
+## ⚙️ Configuration
 
-### Single Target Scan
+### Interactive Setup Wizard
+
+The setup wizard (`setup_config.sh`) guides you through configuration:
 
 ```bash
-# Basic scan
-sudo ./recon.sh example.com
-
-# With WAF bypass and HTML report
-sudo ./recon.sh example.com --waf-bypass --html-report
-
-# Full aggressive scan
-sudo ./recon.sh example.com --aggressive --html-report --json-report
+# Run setup wizard
+./setup_config.sh
 ```
 
-### Multiple Targets Scan
+**The wizard will ask you about:**
+
+1. ✅ Thread & performance settings
+2. ✅ Scanning mode preferences (stealth/aggressive)
+3. ✅ Report format preferences (HTML/JSON)
+4. ✅ Notification channel setup (Discord/Slack/Telegram)
+5. ✅ API keys configuration (optional)
+6. ✅ Tool installation (optional)
+
+### Configuration Files
+
+| File | Purpose | Permissions |
+|------|---------|-------------|
+| `~/.recon_config` | Main configuration | 600 (owner only) |
+| `~/api_keys.json` | API keys & webhooks | 600 (owner only) |
+| `targets.txt.example` | Sample targets file | 644 (readable) |
+
+### Manual Configuration
 
 ```bash
-# Create targets file
-cat > targets.txt << EOF
-example.com
-api.example.com
-test.example.org
-EOF
+# Edit configuration file
+nano ~/.recon_config
 
-# Run batch scan
-sudo ./recon.sh -f targets.txt
+# Edit API keys file
+nano ~/api_keys.json
 
-# Parallel batch processing
-sudo ./recon.sh -f targets.txt --parallel 3 --waf-bypass
+# Set secure permissions
+chmod 600 ~/.recon_config ~/api_keys.json
+```
+
+### Configuration Options
+
+```bash
+# ~/.recon_config
+
+# Thread & Performance
+THREADS=200
+RATE_LIMIT=50
+CRAWL_DEPTH=5
+TIMEOUT=10
+
+# Scanning Mode
+STEALTH_MODE=false
+AGGRESSIVE_MODE=false
+WAF_BYPASS=false
+
+# Reports
+HTML_REPORT=true
+JSON_REPORT=true
+
+# Notifications
+NOTIFY_CHANNEL="discord"
+DISCORD_WEBHOOK="https://discord.com/api/webhooks/..."
+
+# API Keys
+SHODAN_API_KEY="your_key"
+VIRUSTOTAL_API_KEY="your_key"
+GITHUB_TOKEN="your_token"
 ```
 
 ---
@@ -195,7 +288,10 @@ sudo ./recon.sh -f targets.txt --parallel 3 --waf-bypass
 ### Basic Syntax
 
 ```bash
+# Single target
 sudo ./recon.sh <target.com> [options]
+
+# Multiple targets from file
 sudo ./recon.sh -f targets.txt [options]
 ```
 
@@ -203,7 +299,7 @@ sudo ./recon.sh -f targets.txt [options]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-f, --targets FILE` | File containing multiple targets (one per line) | - |
+| `-f, --targets FILE` | File containing multiple targets | - |
 | `--threads N` | Number of concurrent threads | 200 |
 | `--scope FILE` | Scope file with allowed domains | - |
 | `--output DIR` | Output directory | recon_<target>_<timestamp> |
@@ -218,7 +314,7 @@ sudo ./recon.sh -f targets.txt [options]
 | `--aggressive` | Aggressive scanning mode | false |
 | `--stealth` | Stealth mode (slower, less detectable) | false |
 | `--resume ID` | Resume previous scan by ID | - |
-| `--notify CHANNEL` | Notification channel (slack/discord/telegram) | - |
+| `--notify CHANNEL` | Notification channel | - |
 | `--html-report` | Generate HTML report | false |
 | `--json-report` | Generate JSON report | false |
 | `--skip-install` | Skip tool installation check | false |
@@ -231,104 +327,87 @@ sudo ./recon.sh -f targets.txt [options]
 
 ### Examples
 
+#### Single Target Scans
+
 ```bash
-# Standard reconnaissance
-sudo ./recon.sh target.com
+# Basic scan
+sudo ./recon.sh example.com
 
-# Stealth mode with reduced footprint
-sudo ./recon.sh target.com --stealth --threads 50 --rate-limit 10
+# With WAF bypass and HTML report
+sudo ./recon.sh example.com --waf-bypass --html-report
 
-# Aggressive full scan
-sudo ./recon.sh target.com --aggressive --threads 500 --rate-limit 100
+# Full aggressive scan
+sudo ./recon.sh example.com --aggressive --html-report --json-report
 
-# With WAF bypass techniques
-sudo ./recon.sh target.com --waf-bypass --html-report
+# Stealth mode
+sudo ./recon.sh example.com --stealth --threads 50 --rate-limit 10
 
-# Using API keys for enhanced enumeration
-sudo ./recon.sh target.com --api-keys ~/api_keys.json --json-report
-
-# Batch processing with notifications
-sudo ./recon.sh -f targets.txt --parallel 3 --notify discord --html-report
-
-# Resume interrupted scan
-sudo ./recon.sh target.com --resume recon_target_20260320_120000
-
-# Skip already completed targets in batch
-sudo ./recon.sh -f targets.txt --skip-done
+# With API keys
+sudo ./recon.sh example.com --api-keys ~/api_keys.json
 
 # Through proxy
-sudo ./recon.sh target.com --proxy http://127.0.0.1:8080
+sudo ./recon.sh example.com --proxy http://127.0.0.1:8080
 
 # Through Tor
-sudo ./recon.sh target.com --tor --stealth
+sudo ./recon.sh example.com --tor --stealth
 ```
 
----
-
-## ⚙️ Configuration
-
-### Configuration File (~/.recon_config)
+#### Multi-Target Scans
 
 ```bash
-# Create configuration file
-cat > ~/.recon_config << EOF
-# Thread Configuration
-THREADS=200
-RATE_LIMIT=50
-CRAWL_DEPTH=5
-TIMEOUT=10
-
-# Mode Settings
-STEALTH_MODE=false
-AGGRESSIVE_MODE=false
-WAF_BYPASS=false
-
-# Report Settings
-HTML_REPORT=true
-JSON_REPORT=true
-
-# Notification Settings
-NOTIFY_CHANNEL=discord
-DISCORD_WEBHOOK=https://discord.com/api/webhooks/...
-SLACK_WEBHOOK=https://hooks.slack.com/...
-TELEGRAM_BOT_TOKEN=your_bot_token
-TELEGRAM_CHAT_ID=your_chat_id
-
-# API Keys
-SHODAN_API_KEY=your_shodan_key
-VIRUSTOTAL_API_KEY=your_vt_key
-SECURITYTRAILS_API_KEY=your_st_key
-GITHUB_TOKEN=your_github_token
+# Create targets file
+cat > targets.txt << EOF
+example.com
+api.example.com
+test.example.org
 EOF
+
+# Basic batch scan
+sudo ./recon.sh -f targets.txt
+
+# Parallel processing (3 targets at once)
+sudo ./recon.sh -f targets.txt --parallel 3
+
+# Skip already completed targets
+sudo ./recon.sh -f targets.txt --skip-done
+
+# Full batch with all features
+sudo ./recon.sh -f targets.txt \
+    --parallel 3 \
+    --waf-bypass \
+    --html-report \
+    --json-report \
+    --notify discord \
+    --api-keys ~/api_keys.json
 ```
 
-### API Keys File (api_keys.json)
+#### Advanced Usage
 
 ```bash
-cat > ~/api_keys.json << EOF
-export SHODAN_API_KEY="your_shodan_api_key"
-export CENSYS_API_ID="your_censys_id"
-export CENSYS_API_SECRET="your_censys_secret"
-export VIRUSTOTAL_API_KEY="your_virustotal_key"
-export SECURITYTRAILS_API_KEY="your_securitytrails_key"
-export BINARYEDGE_API_KEY="your_binaryedge_key"
-export GITHUB_TOKEN="your_github_token"
-export SLACK_WEBHOOK="your_slack_webhook"
-export DISCORD_WEBHOOK="your_discord_webhook"
-export TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
-export TELEGRAM_CHAT_ID="your_telegram_chat_id"
-EOF
+# Resume interrupted scan
+sudo ./recon.sh example.com --resume recon_example.com_20260320_120000
 
-# Secure the file
-chmod 600 ~/api_keys.json
+# Custom output directory
+sudo ./recon.sh example.com --output /path/to/output
+
+# With scope file (bug bounty)
+sudo ./recon.sh example.com --scope scope.txt
+
+# Debug mode
+sudo ./recon.sh example.com --debug
+
+# Quiet mode (minimal output)
+sudo ./recon.sh example.com --quiet
 ```
 
 ---
 
 ## 📁 Output Structure
 
+### Single Target Output
+
 ```
-recon_target.com_20260320_120000/
+recon_example.com_20260320_120000/
 ├── subs/
 │   ├── all_subs.txt              # All validated subdomains
 │   ├── subfinder.txt             # Subfinder results
@@ -346,7 +425,7 @@ recon_target.com_20260320_120000/
 │   ├── param_names.txt           # Unique parameter names
 │   ├── dirs_*.json               # Directory fuzzing results
 │   ├── vhosts.json               # Virtual host results
-│   └── waf_bypass/               # WAF bypass payloads
+│   └── waf_bypass/               # WAF bypass payloads & results
 ├── js/
 │   ├── js_files.txt              # JavaScript files
 │   ├── sensitive_files.txt       # Sensitive file leaks
@@ -372,17 +451,17 @@ recon_target.com_20260320_120000/
 │   ├── summary_*.txt             # Text report
 │   ├── summary_*.json            # JSON report
 │   └── summary_*.html            # HTML report
-└── ../target.com_recon.log       # Full execution log
+└── ../example.com_recon.log      # Full execution log
 ```
 
-### Master Report (Batch Mode)
+### Batch Mode Output
 
 ```
 recon_batch_20260320_120000/
-├── recon_example.com_*/
-├── recon_api.example.com_*/
-├── recon_test.example.org_*/
-└── MASTER_REPORT_*.txt           # Consolidated batch report
+├── recon_example.com_20260320_120100/
+├── recon_api.example.com_20260320_120500/
+├── recon_staging.example.com_20260320_121000/
+└── MASTER_REPORT_20260320_121500.txt    # Consolidated batch report
 ```
 
 ---
@@ -391,31 +470,72 @@ recon_batch_20260320_120000/
 
 ### Getting API Keys
 
-| Service | Purpose | Get Key |
-|---------|---------|---------|
-| **Shodan** | Infrastructure discovery | [shodan.io](https://www.shodan.io/) |
-| **VirusTotal** | Domain/subdomain intel | [virustotal.com](https://www.virustotal.com/) |
-| **SecurityTrails** | DNS history & subdomains | [securitytrails.com](https://securitytrails.com/) |
-| **Censys** | Certificate & host data | [censys.io](https://search.censys.io/) |
-| **BinaryEdge** | Internet scanning data | [binaryedge.io](https://www.binaryedge.io/) |
-| **GitHub** | Code/secret discovery | [github.com](https://github.com/settings/tokens) |
+| Service | Purpose | Get Key | Free Tier |
+|---------|---------|---------|-----------|
+| **Shodan** | Infrastructure discovery | [shodan.io](https://www.shodan.io/) | ✅ Limited |
+| **VirusTotal** | Domain/subdomain intel | [virustotal.com](https://www.virustotal.com/) | ✅ Yes |
+| **SecurityTrails** | DNS history & subdomains | [securitytrails.com](https://securitytrails.com/) | ✅ Limited |
+| **Censys** | Certificate & host data | [censys.io](https://search.censys.io/) | ✅ Limited |
+| **BinaryEdge** | Internet scanning data | [binaryedge.io](https://www.binaryedge.io/) | ✅ Trial |
+| **GitHub** | Code/secret discovery | [github.com](https://github.com/settings/tokens) | ✅ Yes |
 
-### Best Practices
+### Configure API Keys
 
 ```bash
-# Store keys securely
-chmod 600 ~/api_keys.json
+# Option 1: During setup wizard
+./setup_config.sh
 
-# Never commit keys to git
+# Option 2: Manual edit
+nano ~/api_keys.json
+
+# Option 3: Command line
+sudo ./recon.sh example.com --api-keys ~/api_keys.json
+```
+
+### API Keys File Format
+
+```bash
+# ~/api_keys.json
+#!/bin/bash
+
+# Subdomain & DNS Enumeration
+export SHODAN_API_KEY="your_shodan_key"
+export SECURITYTRAILS_API_KEY="your_st_key"
+export CENSYS_API_ID="your_censys_id"
+export CENSYS_API_SECRET="your_censys_secret"
+export BINARYEDGE_API_KEY="your_be_key"
+
+# Vulnerability & Threat Intelligence
+export VIRUSTOTAL_API_KEY="your_vt_key"
+
+# Code & Secret Discovery
+export GITHUB_TOKEN="your_github_token"
+
+# Notification Webhooks
+export SLACK_WEBHOOK="https://hooks.slack.com/..."
+export DISCORD_WEBHOOK="https://discord.com/api/webhooks/..."
+export TELEGRAM_BOT_TOKEN="your_bot_token"
+export TELEGRAM_CHAT_ID="your_chat_id"
+```
+
+### Security Best Practices
+
+```bash
+# Set secure permissions
+chmod 600 ~/api_keys.json ~/.recon_config
+
+# Never commit to git
 echo "api_keys.json" >> .gitignore
+echo ".recon_config" >> .gitignore
 
-# Use environment variables for CI/CD
-export SHODAN_API_KEY="${SHODAN_API_KEY}"
+# Verify permissions
+ls -la ~/api_keys.json ~/.recon_config
+# Should show: -rw------- (600)
 ```
 
 ---
 
-## 🛡️ WAF Bypass Techniques
+## 🛡️ WAF Bypass
 
 ### Detection
 
@@ -424,7 +544,7 @@ The script automatically detects WAFs using:
 - **httpx** - Header analysis
 - **cdncheck** - CDN presence detection
 
-### Bypass Payloads Generated
+### Bypass Techniques
 
 | Type | Location | Description |
 |------|----------|-------------|
@@ -442,6 +562,21 @@ sudo ./recon.sh target.com --waf-bypass
 
 # Aggressive with WAF bypass
 sudo ./recon.sh target.com --waf-bypass --aggressive
+
+# Batch with WAF bypass
+sudo ./recon.sh -f targets.txt --waf-bypass --parallel 3
+```
+
+### Common WAF Bypass Headers
+
+```
+X-Forwarded-For: 127.0.0.1
+X-Original-URL: /admin
+X-Rewrite-URL: /admin
+X-Custom-IP-Authorization: 127.0.0.1
+X-Host: 127.0.0.1
+X-Forwarded-Host: 127.0.0.1
+True-Client-IP: 127.0.0.1
 ```
 
 ---
@@ -459,13 +594,13 @@ example.com
 api.example.com
 www.example.com
 
-# Staging environments
-staging.example.com
-dev.example.com
+# Staging environments (if authorized)
+# staging.example.com
+# dev.example.com
 
-# Different TLDs
-example.org
-example.net
+# Different TLDs (if same organization)
+# example.org
+# example.net
 ```
 
 ### Batch Commands
@@ -490,14 +625,24 @@ sudo ./recon.sh -f targets.txt \
     --api-keys ~/api_keys.json
 ```
 
-### Batch Output
+### Batch Progress Tracking
 
 ```
-recon_batch_20260320_120000/
-├── recon_example.com_20260320_120100/
-├── recon_api.example.com_20260320_120500/
-├── recon_staging.example.com_20260320_121000/
-└── MASTER_REPORT_20260320_121500.txt
+╔══════════════════════════════════════════════════════════════╗
+║   🔥 ADVANCED RECONNAISSANCE FRAMEWORK v3.0                 ║
+║   📁 BATCH MODE - Multiple Targets                           ║
+║   📊 Total Targets: 10                                       ║
+║   🔀 Parallel: 3                                             ║
+╚══════════════════════════════════════════════════════════════╝
+
+[1/10] Processing: example.com
+[+] Completed: example.com
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Completed: 1 | Skipped: 0 | Failed: 0 | Remaining: 9
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[2/10] Processing: api.example.com
+...
 ```
 
 ---
@@ -515,12 +660,30 @@ recon_batch_20260320_120000/
 ### Configuration
 
 ```bash
-# In ~/.recon_config or api_keys.json
+# In ~/.recon_config or ~/api_keys.json
 export SLACK_WEBHOOK="https://hooks.slack.com/services/..."
 export DISCORD_WEBHOOK="https://discord.com/api/webhooks/..."
 export TELEGRAM_BOT_TOKEN="123456:ABC-DEF1234..."
 export TELEGRAM_CHAT_ID="-1001234567890"
 ```
+
+### Getting Webhooks
+
+#### Discord
+1. Go to Server Settings → Integrations → Webhooks
+2. Click "New Webhook"
+3. Copy the webhook URL
+
+#### Slack
+1. Go to slack.com/apps → Incoming Webhooks
+2. Add to your workspace
+3. Copy the webhook URL
+
+#### Telegram
+1. Message @BotFather to create a bot
+2. Get the bot token
+3. Add bot to your group/channel
+4. Get chat ID via @getidsbot
 
 ### Usage
 
@@ -538,6 +701,17 @@ sudo ./recon.sh target.com --notify telegram
 sudo ./recon.sh -f targets.txt --notify discord
 ```
 
+### Sample Notification
+
+```
+🔍 Recon complete for example.com
+📊 Subdomains: 150
+🌐 Alive Hosts: 45
+🐛 Vulnerabilities: 12
+⚠️ Critical: 2
+📅 2026-03-20 14:30:00
+```
+
 ---
 
 ## 🐛 Troubleshooting
@@ -548,12 +722,13 @@ sudo ./recon.sh -f targets.txt --notify discord
 |-------|----------|
 | **Permission denied** | Run with `sudo` |
 | **Go not found** | Install Go from [go.dev](https://go.dev/dl/) |
-| **Tools not installing** | Check internet connection, run `sudo apt-get update` |
+| **Tools not installing** | Check internet, run `sudo apt-get update` |
 | **API rate limits** | Reduce `--threads` and `--rate-limit` |
 | **Scan too slow** | Increase `--threads`, use `--aggressive` |
 | **Too many false positives** | Use `--stealth` mode |
 | **Memory issues** | Reduce `--threads` to 100 or less |
 | **WAF blocking** | Enable `--waf-bypass`, use `--tor` |
+| **Setup wizard fails** | Run as regular user (not root) |
 
 ### Debug Mode
 
@@ -576,19 +751,47 @@ which subfinder httpx nuclei ffuf dnsx naabu
 
 # Reinstall tools
 sudo ./recon.sh target.com --skip-install
+
+# Update nuclei templates
+nuclei -update-templates
 ```
 
 ### Performance Tuning
 
 ```bash
-# Low-resource system
+# Low-resource system (4GB RAM)
 sudo ./recon.sh target.com --stealth --threads 50 --rate-limit 10
 
-# High-performance system
-sudo ./recon.sh target.com --aggressive --threads 500 --rate-limit 150
-
-# Balanced (default)
+# Medium system (8GB RAM)
 sudo ./recon.sh target.com --threads 200 --rate-limit 50
+
+# High-performance system (16GB+ RAM)
+sudo ./recon.sh target.com --aggressive --threads 500 --rate-limit 150
+```
+
+### Reset Configuration
+
+```bash
+# Remove existing config
+rm ~/.recon_config ~/api_keys.json
+
+# Run setup wizard again
+./setup_config.sh
+```
+
+---
+
+## 📁 Project Structure
+
+```
+recon-framework/
+├── recon.sh              # Main reconnaissance script
+├── setup_config.sh       # Interactive configuration wizard
+├── install.sh            # One-command installer
+├── targets.txt.example   # Sample targets file
+├── README.md             # This documentation
+├── LICENSE               # MIT License
+└── .gitignore            # Git ignore rules
 ```
 
 ---
@@ -605,11 +808,21 @@ sudo ./recon.sh target.com --threads 200 --rate-limit 50
 
 **Unauthorized scanning of systems you do not own or have permission to test is illegal and may result in criminal prosecution.**
 
+### Responsible Use Guidelines
+
+1. **Get Written Permission** - Always obtain explicit authorization before scanning
+2. **Follow Scope** - Stay within the defined scope of your engagement
+3. **Respect Rate Limits** - Don't overwhelm target infrastructure
+4. **Report Responsibly** - Follow responsible disclosure practices
+5. **Document Everything** - Keep records of authorization and findings
+
 ---
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please follow these guidelines:
+
+### How to Contribute
 
 1. **Fork** the repository
 2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
@@ -623,6 +836,16 @@ Contributions are welcome! Please follow these guidelines:
 - Add comments for complex logic
 - Test thoroughly before submitting
 - Update documentation for new features
+- Ensure all scripts have proper error handling
+
+### Areas for Contribution
+
+- 🐛 Bug fixes
+- ✨ New features
+- 📝 Documentation improvements
+- 🧪 Test cases
+- 🌍 Translations
+- 🔒 Security improvements
 
 ---
 
@@ -630,18 +853,45 @@ Contributions are welcome! Please follow these guidelines:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+```
+MIT License
+
+Copyright (c) 2026 Recon Framework
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ---
 
 ## 🙏 Acknowledgments
 
 Thanks to the amazing security community and tool developers:
 
-- [ProjectDiscovery](https://github.com/projectdiscovery) - subfinder, httpx, nuclei, naabu, dnsx, katana
-- [TomNomNom](https://github.com/tomnomnom) - assetfinder, waybackurls
-- [ffuf](https://github.com/ffuf/ffuf) - Fast web fuzzer
-- [OWASP Amass](https://github.com/owasp-amass/amass) - Subdomain enumeration
-- [SecLists](https://github.com/danielmiessler/SecLists) - Wordlists
-- [All other open-source security tool developers](https://github.com/topics/security-tools)
+| Project | Tools |
+|---------|-------|
+| [ProjectDiscovery](https://github.com/projectdiscovery) | subfinder, httpx, nuclei, naabu, dnsx, katana |
+| [TomNomNom](https://github.com/tomnomnom) | assetfinder, waybackurls |
+| [ffuf](https://github.com/ffuf/ffuf) | Fast web fuzzer |
+| [OWASP Amass](https://github.com/owasp-amass/amass) | Subdomain enumeration |
+| [SecLists](https://github.com/danielmiessler/SecLists) | Wordlists |
+| [Dalfox](https://github.com/hahwul/dalfox) | XSS scanner |
+| [Gowitness](https://github.com/sensepost/gowitness) | Screenshot tool |
 
 ---
 
@@ -652,6 +902,39 @@ Thanks to the amazing security community and tool developers:
 | **Issues** | [GitHub Issues](https://github.com/yourusername/recon-framework/issues) |
 | **Discussions** | [GitHub Discussions](https://github.com/yourusername/recon-framework/discussions) |
 | **Documentation** | [Wiki](https://github.com/yourusername/recon-framework/wiki) |
+| **Security** | [Security Policy](https://github.com/yourusername/recon-framework/security) |
+
+### Getting Help
+
+1. Check the [Troubleshooting](#-troubleshooting) section
+2. Search existing [Issues](https://github.com/yourusername/recon-framework/issues)
+3. Run with `--debug` flag for detailed logs
+4. Open a new issue with reproduction steps
+
+---
+
+## 📈 Roadmap
+
+### v3.0 (Current)
+- ✅ Multi-target file support
+- ✅ Interactive setup wizard
+- ✅ One-command installer
+- ✅ WAF bypass techniques
+- ✅ Batch processing with parallel execution
+- ✅ Multiple report formats
+
+### v3.1 (Planned)
+- 🔄 Docker container support
+- 🔄 REST API interface
+- 🔄 Web dashboard
+- 🔄 Real-time progress tracking
+- 🔄 Database integration (PostgreSQL)
+
+### v3.2 (Planned)
+- 🔄 AI-powered vulnerability prioritization
+- 🔄 Automated report sharing
+- 🔄 Integration with ticketing systems (Jira, ServiceNow)
+- 🔄 Custom template support
 
 ---
 
@@ -662,4 +945,46 @@ Thanks to the amazing security community and tool developers:
 <p align="center">
   <img src="https://img.shields.io/badge/Version-3.0.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/Last_Updated-March_2026-green.svg" alt="Updated">
+  <img src="https://img.shields.io/badge/Maintained-Yes-success.svg" alt="Maintained">
 </p>
+
+---
+
+## 🎯 Quick Reference Card
+
+```bash
+# ═══════════════════════════════════════════════════════════════
+# RECON FRAMEWORK - QUICK REFERENCE
+# ═══════════════════════════════════════════════════════════════
+
+# INSTALL
+git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0git
+cd recon-framework
+sudo ./install.sh
+./setup_config.sh
+
+# SINGLE TARGET
+sudo ./recon.sh example.com
+sudo ./recon.sh example.com --waf-bypass --html-report
+sudo ./recon.sh example.com --stealth --api-keys ~/api_keys.json
+
+# MULTI-TARGET
+sudo ./recon.sh -f targets.txt
+sudo ./recon.sh -f targets.txt --parallel 3 --notify discord
+
+# ADVANCED
+sudo ./recon.sh example.com --aggressive --html-report --json-report
+sudo ./recon.sh example.com --tor --stealth --skip-install
+sudo ./recon.sh example.com --resume recon_example.com_20260320_120000
+
+# CONFIGURATION
+nano ~/.recon_config
+nano ~/api_keys.json
+chmod 600 ~/.recon_config ~/api_keys.json
+
+# TROUBLESHOOTING
+sudo ./recon.sh example.com --debug
+cat example.com_recon.log
+
+# ═══════════════════════════════════════════════════════════════
+```
