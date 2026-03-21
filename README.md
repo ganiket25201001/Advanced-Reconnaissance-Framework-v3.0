@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-3.0.0-blue.svg" alt="Version">
-  <img src="https://img.shields.io/badge/Bash-5.0+-green.svg" alt="Bash">
+  <img src="https://img.shields.io/badge/Bash-4.0+-green.svg" alt="Bash">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
   <img src="https://img.shields.io/badge/Status-Active-success.svg" alt="Status">
 </p>
@@ -42,8 +42,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0git
-cd recon-framework
+git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
+cd Advanced-Reconnaissance-Framework-v3.0
 
 # Run one-command installer (requires sudo)
 sudo ./install.sh
@@ -126,12 +126,13 @@ sudo ./recon.sh example.com --waf-bypass --html-report
 
 ```bash
 # Required
-- Bash 5.0+
+- Bash 4.0+
 - Go 1.20+
 - Python 3.8+
 - Git
 - Curl
 - JQ
+- bc (for calculations)
 ```
 
 ### Tools (Auto-Installed)
@@ -142,7 +143,7 @@ The script automatically installs these tools if missing:
 |----------|-------|
 | **Go Tools** | subfinder, assetfinder, httpx, katana, nuclei, dnsx, naabu, ffuf, waybackurls, gau, alterx, dalfox, hakrawler, gospider, subzy, gowitness, cdncheck, tlsx |
 | **Python Tools** | wafw00f, sqlmap, whatweb |
-| **APT Tools** | amass, nmap, curl, jq, git |
+| **APT Tools** | amass, nmap, curl, jq, git, bc |
 
 ---
 
@@ -152,8 +153,8 @@ The script automatically installs these tools if missing:
 
 ```bash
 # Clone repository
-git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0git
-cd recon-framework
+git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
+cd Advanced-Reconnaissance-Framework-v3.0
 
 # Run installer (requires sudo)
 sudo ./install.sh
@@ -166,21 +167,22 @@ sudo ./install.sh
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0git
-cd recon-framework
+git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
+cd Advanced-Reconnaissance-Framework-v3.0
 
 # 2. Make scripts executable
 chmod +x recon.sh setup_config.sh
 
 # 3. Install system dependencies
 sudo apt-get update
-sudo apt-get install -y git curl jq wget python3 python3-pip
+sudo apt-get install -y git curl jq wget python3 python3-pip bc
 
-# 4. Install Go (if not installed)
-wget https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz
+# 4. Install Go (if not installed) - Dynamic version
+GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | head -n1)
+wget "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz"
+sudo tar -C /usr/local -xzf "${GO_VERSION}.linux-amd64.tar.gz"
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.bashrc
+echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
 source ~/.bashrc
 
 # 5. Run setup wizard
@@ -205,7 +207,7 @@ go version
 sudo ./recon.sh --help
 
 # Verify setup
-ls -la ~/.recon_config ~/api_keys.json
+ls -la ~/.recon_config ~/api_keys.sh
 ```
 
 ---
@@ -235,7 +237,7 @@ The setup wizard (`setup_config.sh`) guides you through configuration:
 | File | Purpose | Permissions |
 |------|---------|-------------|
 | `~/.recon_config` | Main configuration | 600 (owner only) |
-| `~/api_keys.json` | API keys & webhooks | 600 (owner only) |
+| `~/api_keys.sh` | API keys & webhooks | 600 (owner only) |
 | `targets.txt.example` | Sample targets file | 644 (readable) |
 
 ### Manual Configuration
@@ -245,10 +247,10 @@ The setup wizard (`setup_config.sh`) guides you through configuration:
 nano ~/.recon_config
 
 # Edit API keys file
-nano ~/api_keys.json
+nano ~/api_keys.sh
 
 # Set secure permissions
-chmod 600 ~/.recon_config ~/api_keys.json
+chmod 600 ~/.recon_config ~/api_keys.sh
 ```
 
 ### Configuration Options
@@ -343,7 +345,7 @@ sudo ./recon.sh example.com --aggressive --html-report --json-report
 sudo ./recon.sh example.com --stealth --threads 50 --rate-limit 10
 
 # With API keys
-sudo ./recon.sh example.com --api-keys ~/api_keys.json
+sudo ./recon.sh example.com --api-keys ~/api_keys.sh
 
 # Through proxy
 sudo ./recon.sh example.com --proxy http://127.0.0.1:8080
@@ -378,7 +380,7 @@ sudo ./recon.sh -f targets.txt \
     --html-report \
     --json-report \
     --notify discord \
-    --api-keys ~/api_keys.json
+    --api-keys ~/api_keys.sh
 ```
 
 #### Advanced Usage
@@ -486,16 +488,16 @@ recon_batch_20260320_120000/
 ./setup_config.sh
 
 # Option 2: Manual edit
-nano ~/api_keys.json
+nano ~/api_keys.sh
 
 # Option 3: Command line
-sudo ./recon.sh example.com --api-keys ~/api_keys.json
+sudo ./recon.sh example.com --api-keys ~/api_keys.sh
 ```
 
 ### API Keys File Format
 
 ```bash
-# ~/api_keys.json
+# ~/api_keys.sh
 #!/bin/bash
 
 # Subdomain & DNS Enumeration
@@ -522,14 +524,14 @@ export TELEGRAM_CHAT_ID="your_chat_id"
 
 ```bash
 # Set secure permissions
-chmod 600 ~/api_keys.json ~/.recon_config
+chmod 600 ~/api_keys.sh ~/.recon_config
 
 # Never commit to git
-echo "api_keys.json" >> .gitignore
+echo "api_keys.sh" >> .gitignore
 echo ".recon_config" >> .gitignore
 
 # Verify permissions
-ls -la ~/api_keys.json ~/.recon_config
+ls -la ~/api_keys.sh ~/.recon_config
 # Should show: -rw------- (600)
 ```
 
@@ -622,7 +624,7 @@ sudo ./recon.sh -f targets.txt \
     --html-report \
     --json-report \
     --notify discord \
-    --api-keys ~/api_keys.json
+    --api-keys ~/api_keys.sh
 ```
 
 ### Batch Progress Tracking
@@ -660,7 +662,7 @@ Completed: 1 | Skipped: 0 | Failed: 0 | Remaining: 9
 ### Configuration
 
 ```bash
-# In ~/.recon_config or ~/api_keys.json
+# In ~/.recon_config or ~/api_keys.sh
 export SLACK_WEBHOOK="https://hooks.slack.com/services/..."
 export DISCORD_WEBHOOK="https://discord.com/api/webhooks/..."
 export TELEGRAM_BOT_TOKEN="123456:ABC-DEF1234..."
@@ -729,6 +731,7 @@ sudo ./recon.sh -f targets.txt --notify discord
 | **Memory issues** | Reduce `--threads` to 100 or less |
 | **WAF blocking** | Enable `--waf-bypass`, use `--tor` |
 | **Setup wizard fails** | Run as regular user (not root) |
+| **bc not found** | Install with `sudo apt-get install bc` |
 
 ### Debug Mode
 
@@ -773,7 +776,7 @@ sudo ./recon.sh target.com --aggressive --threads 500 --rate-limit 150
 
 ```bash
 # Remove existing config
-rm ~/.recon_config ~/api_keys.json
+rm ~/.recon_config ~/api_keys.sh
 
 # Run setup wizard again
 ./setup_config.sh
@@ -784,7 +787,7 @@ rm ~/.recon_config ~/api_keys.json
 ## 📁 Project Structure
 
 ```
-recon-framework/
+Advanced-Reconnaissance-Framework-v3.0/
 ├── recon.sh              # Main reconnaissance script
 ├── setup_config.sh       # Interactive configuration wizard
 ├── install.sh            # One-command installer
@@ -899,15 +902,15 @@ Thanks to the amazing security community and tool developers:
 
 | Channel | Link |
 |---------|------|
-| **Issues** | [GitHub Issues](https://github.com/yourusername/recon-framework/issues) |
-| **Discussions** | [GitHub Discussions](https://github.com/yourusername/recon-framework/discussions) |
-| **Documentation** | [Wiki](https://github.com/yourusername/recon-framework/wiki) |
-| **Security** | [Security Policy](https://github.com/yourusername/recon-framework/security) |
+| **Issues** | [GitHub Issues](https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0/issues) |
+| **Discussions** | [GitHub Discussions](https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0/discussions) |
+| **Documentation** | [Wiki](https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0/wiki) |
+| **Security** | [Security Policy](https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0/security) |
 
 ### Getting Help
 
 1. Check the [Troubleshooting](#-troubleshooting) section
-2. Search existing [Issues](https://github.com/yourusername/recon-framework/issues)
+2. Search existing [Issues](https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0/issues)
 3. Run with `--debug` flag for detailed logs
 4. Open a new issue with reproduction steps
 
@@ -958,15 +961,15 @@ Thanks to the amazing security community and tool developers:
 # ═══════════════════════════════════════════════════════════════
 
 # INSTALL
-git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0git
-cd recon-framework
+git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
+cd Advanced-Reconnaissance-Framework-v3.0
 sudo ./install.sh
 ./setup_config.sh
 
 # SINGLE TARGET
 sudo ./recon.sh example.com
 sudo ./recon.sh example.com --waf-bypass --html-report
-sudo ./recon.sh example.com --stealth --api-keys ~/api_keys.json
+sudo ./recon.sh example.com --stealth --api-keys ~/api_keys.sh
 
 # MULTI-TARGET
 sudo ./recon.sh -f targets.txt
@@ -979,8 +982,8 @@ sudo ./recon.sh example.com --resume recon_example.com_20260320_120000
 
 # CONFIGURATION
 nano ~/.recon_config
-nano ~/api_keys.json
-chmod 600 ~/.recon_config ~/api_keys.json
+nano ~/api_keys.sh
+chmod 600 ~/.recon_config ~/api_keys.sh
 
 # TROUBLESHOOTING
 sudo ./recon.sh example.com --debug
