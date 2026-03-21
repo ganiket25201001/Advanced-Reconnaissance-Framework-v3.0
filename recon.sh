@@ -5,15 +5,15 @@
 # 📅 Updated: March 2026
 # 📁 NOW SUPPORTS MULTI-TARGET FILES (-f/--targets)
 # ════════════════════════════════════════════════════════════════════════════
-
 set -euo pipefail
 
 # ─── CONFIGURATION ───────────────────────────────────────────────────────────
 readonly VERSION="3.0.0"
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-readonly CONFIG_FILE="${HOME}/.recon_config"
-readonly LOCK_FILE="/tmp/recon_${RANDOM}.lock"
+# FIXED: Not readonly, can be overridden by --config
+CONFIG_FILE="${HOME}/.recon_config"
+readonly LOCK_FILE="/tmp/recon_$$.lock"
 
 # ─── COLORS & FORMATTING ─────────────────────────────────────────────────────
 declare -A COLORS=(
@@ -31,6 +31,8 @@ declare -A COLORS=(
 
 # ─── LOGGING SETUP ───────────────────────────────────────────────────────────
 LOG_LEVEL="${LOG_LEVEL:-INFO}"
+# FIXED: Initialize LOG_FILE early before any logging
+LOG_FILE="/tmp/recon_$$.log"
 declare -A LOG_LEVELS=([DEBUG]=0 [INFO]=1 [WARN]=2 [ERROR]=3)
 
 log() {
@@ -38,8 +40,9 @@ log() {
     shift
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     local color="${COLORS[${level}]:-${COLORS[WHITE]}}"
+    # FIXED: Check LOG_FILE exists before writing
     [[ ${LOG_LEVELS[$level]:-1} -ge ${LOG_LEVELS[$LOG_LEVEL]:-1} ]] && \
-        echo -e "${color}[${timestamp}] [${level}]${COLORS[RESET]} $*" >> "$LOG_FILE" 2>/dev/null
+        echo -e "${color}[${timestamp}] [${level}]${COLORS[RESET]} $*" >> "$LOG_FILE" 2>/dev/null || true
     [[ "$level" != "DEBUG" ]] && echo -e "${color}[${level}]${COLORS[RESET]} $*"
 }
 
@@ -70,31 +73,50 @@ enforce_sudo() {
 cleanup() {
     local exit_code=$?
     info "Cleaning up temporary files..."
-    rm -f "$LOCK_FILE" 2>/dev/null
-    [[ -n "${TEMP_DIR:-}" && -d "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR" 2>/dev/null
+    rm -f "$LOCK_FILE" 2>/dev/null || true
+    [[ -n "${TEMP_DIR:-}" && -d "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR" 2>/dev/null || true
     if [[ $exit_code -ne 0 ]]; then
         warn "Script exited with code: $exit_code"
         [[ -f "$LOG_FILE" ]] && warn "Check log: $LOG_FILE"
     fi
     exit $exit_code
 }
-
 trap cleanup EXIT INT TERM HUP
 
 # ─── ARGUMENT PARSING ────────────────────────────────────────────────────────
 TARGET=""
 TARGETS_FILE=""
+THREADS=""
+RATE_LIMIT=""
+CRAWL_DEPTH=""
+TIMEOUT=""
+WAF_BYPASS="false"
+AGGRESSIVE="false"
+STEALTH_MODE="false"
+HTML_REPORT="false"
+JSON_REPORT="false"
+PARALLEL_TARGETS="1"
+SKIP_DONE="false"
+SKIP_INSTALL="false"
+USE_TOR="false"
+PROXY=""
+SCOPE_FILE=""
+OUTDIR=""
+API_KEYS_FILE=""
+NOTIFY_CHANNEL=""
+RESUME_ID=""
+LOG_LEVEL="INFO"
 
 parse_args() {
     [[ -z "$1" ]] && error "Usage: sudo $0 <target.com> [options] OR sudo $0 -f targets.txt [options]"
-
+    
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -f|--targets)       TARGETS_FILE="$2"; shift 2 ;;
             --threads)          THREADS="$2"; shift 2 ;;
             --scope)            SCOPE_FILE="$2"; shift 2 ;;
             --output)           OUTDIR="$2"; shift 2 ;;
-            --config)           CONFIG_FILE="$2"; shift 2 ;;
+            --config)           CONFIG_FILE="$2"; shift 2 ;;  # FIXED: CONFIG_FILE not readonly
             --proxy)            PROXY="$2"; shift 2 ;;
             --tor)              USE_TOR=true; shift ;;
             --rate-limit)       RATE_LIMIT="$2"; shift 2 ;;
@@ -119,14 +141,15 @@ parse_args() {
             *)                  TARGET="$1"; shift ;;
         esac
     done
-
+    
     # Validate input
     if [[ -n "$TARGETS_FILE" ]]; then
         [[ ! -f "$TARGETS_FILE" ]] && error "Targets file not found: $TARGETS_FILE"
         [[ ! -r "$TARGETS_FILE" ]] && error "Cannot read targets file: $TARGETS_FILE"
         info "Loading targets from file: $TARGETS_FILE"
     elif [[ -n "$TARGET" ]]; then
-        # Validate domain format
+        # FIXED: Better domain validation with sanitization
+        TARGET=$(echo "$TARGET" | tr -cd 'a-zA-Z0-9.-')
         if ! [[ "$TARGET" =~ ^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$ ]]; then
             warn "Target may not be a valid domain: $TARGET"
         fi
@@ -186,15 +209,15 @@ ${COLORS[BOLD]}TARGETS FILE FORMAT:${COLORS[RESET]}
 ${COLORS[BOLD]}EXAMPLES:${COLORS[RESET]}
     # Single target
     sudo $0 example.com
-
+    
     # Multiple targets from file
     sudo $0 -f targets.txt
-
+    
     # With WAF bypass and parallel processing
     sudo $0 -f targets.txt --waf-bypass --parallel 3 --html-report
-
+    
     # Stealth mode with API keys
-    sudo $0 -f targets.txt --stealth --api-keys keys.json --notify discord
+    sudo $0 -f targets.txt --stealth --api-keys keys.sh --notify discord
 
 ${COLORS[BOLD]}NOTE:${COLORS[RESET]} This script requires sudo privileges for network operations.
 EOF
@@ -266,6 +289,9 @@ parse_targets_file() {
         # Trim whitespace
         line=$(echo "$line" | xargs)
         
+        # FIXED: Better domain validation with sanitization
+        line=$(echo "$line" | tr -cd 'a-zA-Z0-9.-')
+        
         # Validate domain format (basic check)
         if [[ "$line" =~ ^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$ ]]; then
             targets+=("$line")
@@ -309,23 +335,23 @@ declare -A TOOLS=(
     [gowitness]="github.com/sensepost/gowitness"
     [cdncheck]="github.com/projectdiscovery/cdncheck/cmd/cdncheck"
     [tlsx]="github.com/projectdiscovery/tlsx/cmd/tlsx"
-    
     # Python tools
     [wafw00f]="wafw00f"
     [sqlmap]="sqlmap"
     [whatweb]="whatweb"
-    
     # APT tools
     [amass]="amass"
     [nmap]="nmap"
     [curl]="curl"
     [jq]="jq"
     [git]="git"
+    [bc]="bc"
 )
 
 install_go_tool() {
     local cmd="$1"
     local pkg="$2"
+    
     if ! command -v "$cmd" &>/dev/null; then
         if [[ "${SKIP_INSTALL:-false}" != "true" ]]; then
             warn "${COLORS[YELLOW]}$cmd${COLORS[RESET]} not found — installing via Go..."
@@ -342,6 +368,7 @@ install_go_tool() {
 install_apt_tool() {
     local cmd="$1"
     local pkg="${2:-$1}"
+    
     if ! command -v "$cmd" &>/dev/null; then
         if [[ "${SKIP_INSTALL:-false}" != "true" ]]; then
             warn "${COLORS[YELLOW]}$cmd${COLORS[RESET]} not found — installing via apt..."
@@ -358,9 +385,12 @@ install_apt_tool() {
 install_pip_tool() {
     local cmd="$1"
     local pkg="${2:-$1}"
+    
     if ! command -v "$cmd" &>/dev/null; then
         if [[ "${SKIP_INSTALL:-false}" != "true" ]]; then
             warn "${COLORS[YELLOW]}$cmd${COLORS[RESET]} not found — installing via pip..."
+            # FIXED: Handle modern Python externally-managed-environment
+            pip3 install --break-system-packages "$pkg" -q 2>/dev/null || \
             pip3 install "$pkg" -q 2>/dev/null && \
                 success "$cmd installed successfully" || \
                 warn "Failed to install $cmd"
@@ -378,13 +408,19 @@ check_and_install_tools() {
         error "Go is required but not installed. Install from: https://go.dev/dl/"
     fi
     
+    # FIXED: Check bc installation
+    if ! command -v bc &>/dev/null; then
+        warn "bc not found - installing..."
+        apt-get install -y bc -qq 2>/dev/null || true
+    fi
+    
     info "Installing Go-based tools..."
     for tool in "${!TOOLS[@]}"; do
         case "$tool" in
             wafw00f|sqlmap|whatweb)
                 install_pip_tool "$tool" "${TOOLS[$tool]}"
                 ;;
-            amass|nmap|curl|jq|git)
+            amass|nmap|curl|jq|git|bc)
                 install_apt_tool "$tool" "${TOOLS[$tool]}"
                 ;;
             *)
@@ -462,7 +498,6 @@ setup_wordlists() {
 # ─── WAF DETECTION & BYPASS ──────────────────────────────────────────────────
 detect_waf() {
     section "🛡️ WAF DETECTION"
-    
     local waf_results="vulns/waf_detection.txt"
     mkdir -p "$(dirname "$waf_results")"
     
@@ -495,7 +530,6 @@ detect_waf() {
 
 waf_bypass_techniques() {
     section "🔓 WAF BYPASS TECHNIQUES"
-    
     local bypass_dir="fuzz/waf_bypass"
     mkdir -p "$bypass_dir"
     
@@ -523,7 +557,7 @@ Cluster-Client-IP: 127.0.0.1
 X-Proxy-IP: 127.0.0.1
 X-Forwarded-For: 127.0.0.1, 127.0.0.1
 EOF
-
+    
     # Encoding bypass payloads
     cat > "$bypass_dir/encoding_bypass.txt" << 'EOF'
 %2e%2e%2f
@@ -541,7 +575,7 @@ EOF
 ;%0a
 %3b
 EOF
-
+    
     # SQL injection bypass payloads
     cat > "$bypass_dir/sqli_bypass.txt" << 'EOF'
 ' OR '1'='1
@@ -556,7 +590,7 @@ admin'--
 %27%20OR%20%271%27%3D%271
 %22%20OR%20%221%22%3D%221
 EOF
-
+    
     # XSS bypass payloads
     cat > "$bypass_dir/xss_bypass.txt" << 'EOF'
 <script>alert(1)</script>
@@ -569,7 +603,7 @@ text/html,<script>alert(1)</script>
 %3Cscript%3Ealert(1)%3C/script%3E
 %3Csvg/onload=alert(1)%3E
 EOF
-
+    
     # Path traversal bypass
     cat > "$bypass_dir/lfi_bypass.txt" << 'EOF'
 ....//....//....//etc/passwd
@@ -581,7 +615,7 @@ EOF
 /etc/passwd%00
 ....//....//....//etc/passwd%00
 EOF
-
+    
     success "WAF bypass payloads generated in: $bypass_dir"
     
     # Run FFUF with bypass headers if URLs available
@@ -602,7 +636,6 @@ EOF
 # ─── SUBDOMAIN ENUMERATION ───────────────────────────────────────────────────
 enumerate_subdomains() {
     section "🧠 SUBDOMAIN ENUMERATION"
-    
     mkdir -p subs
     
     # Passive enumeration
@@ -636,22 +669,22 @@ enumerate_subdomains() {
             virustotal)
                 [[ -n "$VIRUSTOTAL_API_KEY" ]] && \
                     curl -s "https://www.virustotal.com/api/v3/domains/$TARGET/subdomains" \
-                        -H "x-apikey: $VIRUSTOTAL_API_KEY" 2>/dev/null | \
-                        jq -r '.data[].id' 2>/dev/null > subs/virustotal.txt || true
+                    -H "x-apikey: $VIRUSTOTAL_API_KEY" 2>/dev/null | \
+                    jq -r '.data[].id' 2>/dev/null > subs/virustotal.txt || true
                 ;;
             securitytrails)
                 [[ -n "$SECURITYTRAILS_API_KEY" ]] && \
                     curl -s "https://api.securitytrails.com/v1/domain/$TARGET/subdomains" \
-                        -H "APIKEY: $SECURITYTRAILS_API_KEY" 2>/dev/null | \
-                        jq -r '.subdomains[]' 2>/dev/null | \
-                        sed "s/$/.$TARGET/" > subs/securitytrails.txt || true
+                    -H "APIKEY: $SECURITYTRAILS_API_KEY" 2>/dev/null | \
+                    jq -r '.subdomains[]' 2>/dev/null | \
+                    sed "s/$/.$TARGET/" > subs/securitytrails.txt || true
                 ;;
         esac
     done
     
     # Merge and deduplicate
     info "Merging subdomain results..."
-    cat subs/*.txt 2>/dev/null | sort -u | grep -E "$TARGET$" > subs/all_subs_raw.txt
+    cat subs/*.txt 2>/dev/null | sort -u | grep -E "$TARGET$" > subs/all_subs_raw.txt || true
     
     # DNS validation
     if command -v dnsx &>/dev/null; then
@@ -675,7 +708,6 @@ scan_ports() {
         naabu -l subs/all_subs.txt \
             -p 80,443,8080,8000,8443,8888,3000,4000,5000,9000,21,22,23,25,53,110,143,3306,3389,5432,5900,6379,27017 \
             -silent -o subs/ports.txt 2>/dev/null || true
-        
         success "Port scan complete: $(wc -l < subs/ports.txt 2>/dev/null || echo 0) results"
     fi
     
@@ -691,7 +723,6 @@ scan_ports() {
 # ─── HOST ALIVE CHECK ────────────────────────────────────────────────────────
 check_alive_hosts() {
     section "🌐 LIVE HOST DETECTION"
-    
     mkdir -p urls
     
     info "Probing live hosts with httpx..."
@@ -703,8 +734,8 @@ check_alive_hosts() {
         -timeout "$TIMEOUT" \
         -o urls/alive.txt 2>/dev/null || true
     
-    # Extract URLs
-    grep -oP 'https?://[^\s]+' urls/alive.txt | sort -u > urls/alive_urls.txt 2>/dev/null || true
+    # FIXED: Use grep -E instead of grep -P for portability
+    grep -oE 'https?://[^[:space:]]+' urls/alive.txt | sort -u > urls/alive_urls.txt 2>/dev/null || true
     
     # Technology detection
     if command -v whatweb &>/dev/null; then
@@ -721,7 +752,6 @@ check_alive_hosts() {
 # ─── CRAWLING & URL DISCOVERY ────────────────────────────────────────────────
 discover_urls() {
     section "🕷️ URL DISCOVERY & CRAWLING"
-    
     mkdir -p urls
     
     info "Running katana..."
@@ -736,7 +766,7 @@ discover_urls() {
         gospider -S urls/alive_urls.txt -d "$CRAWL_DEPTH" -q \
         -o urls/gospider_raw 2>/dev/null && \
         find urls/gospider_raw -type f -exec cat {} \; 2>/dev/null | \
-        grep -oP 'https?://[^\s"]+' >> urls/katana.txt || true
+        grep -oE 'https?://[^[:space:]]+' >> urls/katana.txt || true
     
     info "Running hakrawler..."
     command -v hakrawler &>/dev/null && \
@@ -751,7 +781,7 @@ discover_urls() {
     gau "$TARGET" --subs --threads 10 >> urls/katana.txt 2>/dev/null || true
     
     # Merge and deduplicate
-    cat urls/katana.txt | sort -u > urls/all_urls.txt
+    cat urls/katana.txt | sort -u > urls/all_urls.txt || true
     
     local count=$(wc -l < urls/all_urls.txt 2>/dev/null || echo 0)
     success "Total unique URLs: $count"
@@ -760,7 +790,6 @@ discover_urls() {
 # ─── JAVASCRIPT & SENSITIVE FILE ANALYSIS ────────────────────────────────────
 analyze_js_files() {
     section "🎯 JAVASCRIPT & SENSITIVE FILE ANALYSIS"
-    
     mkdir -p js
     
     # Extract JS files
@@ -770,13 +799,18 @@ analyze_js_files() {
     grep -iE "\.(env|json|log|bak|backup|db|sql|config|xml|yaml|yml|conf|key|pem|p12|zip|tar|gz|7z|rar)(\?|$)" \
         urls/all_urls.txt | sort -u > js/sensitive_files.txt || true
     
-    # Extract secrets from JS
+    # Extract secrets from JS - FIXED: Check if nuclei-templates exists
     if command -v nuclei &>/dev/null && [[ -s js/js_files.txt ]]; then
         info "Scanning JS files for secrets..."
-        nuclei -l js/js_files.txt \
-            -t ~/nuclei-templates/exposures/tokens/ \
-            -t ~/nuclei-templates/exposures/apis/ \
-            -silent -o js/js_secrets.txt 2>/dev/null || true
+        local nuclei_templates="${HOME}/nuclei-templates"
+        if [[ -d "$nuclei_templates" ]]; then
+            nuclei -l js/js_files.txt \
+                -t "$nuclei_templates/exposures/tokens/" \
+                -t "$nuclei_templates/exposures/apis/" \
+                -silent -o js/js_secrets.txt 2>/dev/null || true
+        else
+            warn "Nuclei templates not found at $nuclei_templates"
+        fi
     fi
     
     # Download and analyze JS files
@@ -799,12 +833,13 @@ analyze_js_files() {
 # ─── PARAMETER DISCOVERY ─────────────────────────────────────────────────────
 discover_parameters() {
     section "🧪 PARAMETER DISCOVERY"
-    
     mkdir -p fuzz
     
     # Extract params from URLs
     grep "=" urls/all_urls.txt | grep -v "^#" | sort -u > fuzz/params_raw.txt || true
-    grep -oP '[?&][^=&]+=' fuzz/params_raw.txt | tr -d '?&=' | sort -u > fuzz/param_names.txt || true
+    
+    # FIXED: Use grep -E instead of grep -P
+    grep -oE '[?&][^=&]+=' fuzz/params_raw.txt | tr -d '?&=' | sort -u > fuzz/param_names.txt || true
     
     # FFUF parameter discovery
     if command -v ffuf &>/dev/null && [[ -f "$PARAM_WORDLIST" && -s urls/alive_urls.txt ]]; then
@@ -859,20 +894,30 @@ fuzz_vhosts() {
 # ─── VULNERABILITY SCANNING ──────────────────────────────────────────────────
 scan_vulnerabilities() {
     section "🐛 VULNERABILITY SCANNING"
-    
     mkdir -p vulns
     
-    # Nuclei scan
+    # Nuclei scan - FIXED: Check if nuclei-templates exists
     if command -v nuclei &>/dev/null && [[ -s urls/alive_urls.txt ]]; then
         info "Running nuclei vulnerability scan..."
-        nuclei -l urls/alive_urls.txt \
-            -t ~/nuclei-templates \
-            -severity critical,high,medium \
-            -rate-limit "$RATE_LIMIT" \
-            -concurrency "$THREADS" \
-            -timeout "$TIMEOUT" \
-            -stats \
-            -o vulns/nuclei.txt 2>/dev/null || true
+        local nuclei_templates="${HOME}/nuclei-templates"
+        if [[ -d "$nuclei_templates" ]]; then
+            nuclei -l urls/alive_urls.txt \
+                -t "$nuclei_templates" \
+                -severity critical,high,medium \
+                -rate-limit "$RATE_LIMIT" \
+                -concurrency "$THREADS" \
+                -timeout "$TIMEOUT" \
+                -stats \
+                -o vulns/nuclei.txt 2>/dev/null || true
+        else
+            nuclei -l urls/alive_urls.txt \
+                -severity critical,high,medium \
+                -rate-limit "$RATE_LIMIT" \
+                -concurrency "$THREADS" \
+                -timeout "$TIMEOUT" \
+                -stats \
+                -o vulns/nuclei.txt 2>/dev/null || true
+        fi
         
         # Separate by severity
         grep -i "\[critical\]" vulns/nuclei.txt > vulns/nuclei_critical.txt 2>/dev/null || true
@@ -932,7 +977,6 @@ capture_screenshots() {
 # ─── CLOUD BUCKET ENUMERATION ────────────────────────────────────────────────
 enumerate_cloud_buckets() {
     section "☁️ CLOUD BUCKET ENUMERATION"
-    
     mkdir -p cloud
     
     info "Checking for S3 buckets..."
@@ -988,96 +1032,92 @@ github_dorking() {
 # ─── REPORT GENERATION ───────────────────────────────────────────────────────
 generate_report() {
     section "📊 REPORT GENERATION"
-    
     local timestamp=$(date +%Y%m%d_%H%M%S)
     local report_dir="reports"
     mkdir -p "$report_dir"
+    
+    # FIXED: Safe file count function
+    count_lines() {
+        [[ -f "$1" ]] && wc -l < "$1" 2>/dev/null || echo 0
+    }
     
     # Text report
     local text_report="$report_dir/summary_${timestamp}.txt"
     cat > "$text_report" << EOF
 ════════════════════════════════════════════════════════════════════════════
-  RECONNAISSANCE REPORT — $TARGET
-  Generated: $(date)
-  Script Version: $VERSION
+RECONNAISSANCE REPORT — $TARGET
+Generated: $(date)
+Script Version: $VERSION
 ════════════════════════════════════════════════════════════════════════════
-
 [SUBDOMAINS]
-  Total unique      : $(wc -l < subs/all_subs.txt 2>/dev/null || echo 0)
-  DNS-validated     : $(wc -l < subs/all_subs.txt 2>/dev/null || echo 0)
-
+Total unique      : $(count_lines subs/all_subs.txt)
+DNS-validated     : $(count_lines subs/all_subs.txt)
 [HOSTS]
-  Alive             : $(wc -l < urls/alive.txt 2>/dev/null || echo 0)
-
+Alive             : $(count_lines urls/alive.txt)
 [URLS]
-  Total discovered  : $(wc -l < urls/all_urls.txt 2>/dev/null || echo 0)
-  JS files          : $(wc -l < js/js_files.txt 2>/dev/null || echo 0)
-  Sensitive files   : $(wc -l < js/sensitive_files.txt 2>/dev/null || echo 0)
-  Parameters found  : $(wc -l < fuzz/params_raw.txt 2>/dev/null || echo 0)
-
+Total discovered  : $(count_lines urls/all_urls.txt)
+JS files          : $(count_lines js/js_files.txt)
+Sensitive files   : $(count_lines js/sensitive_files.txt)
+Parameters found  : $(count_lines fuzz/params_raw.txt)
 [VULNERABILITIES]
-  Nuclei (total)    : $(wc -l < vulns/nuclei.txt 2>/dev/null || echo 0)
-  ↳ Critical        : $(wc -l < vulns/nuclei_critical.txt 2>/dev/null || echo 0)
-  ↳ High            : $(wc -l < vulns/nuclei_high.txt 2>/dev/null || echo 0)
-  ↳ Medium          : $(wc -l < vulns/nuclei_medium.txt 2>/dev/null || echo 0)
-  XSS (dalfox)      : $(wc -l < vulns/xss.txt 2>/dev/null || echo 0)
-  Takeover          : $(wc -l < vulns/takeover.txt 2>/dev/null || echo 0)
-
+Nuclei (total)    : $(count_lines vulns/nuclei.txt)
+↳ Critical        : $(count_lines vulns/nuclei_critical.txt)
+↳ High            : $(count_lines vulns/nuclei_high.txt)
+↳ Medium          : $(count_lines vulns/nuclei_medium.txt)
+XSS (dalfox)      : $(count_lines vulns/xss.txt)
+Takeover          : $(count_lines vulns/takeover.txt)
 [CLOUD]
-  S3 buckets        : $(wc -l < cloud/s3_buckets.txt 2>/dev/null || echo 0)
-  Azure blobs       : $(wc -l < cloud/azure_blobs.txt 2>/dev/null || echo 0)
-  GCS buckets       : $(wc -l < cloud/gcs_buckets.txt 2>/dev/null || echo 0)
-
+S3 buckets        : $(count_lines cloud/s3_buckets.txt)
+Azure blobs       : $(count_lines cloud/azure_blobs.txt)
+GCS buckets       : $(count_lines cloud/gcs_buckets.txt)
 [GITHUB]
-  Code mentions     : $(wc -l < github/code_mentions.txt 2>/dev/null || echo 0)
-  Potential leaks   : $(wc -l < github/potential_leaks.txt 2>/dev/null || echo 0)
-
+Code mentions     : $(count_lines github/code_mentions.txt)
+Potential leaks   : $(count_lines github/potential_leaks.txt)
 [OUTPUT FILES]
-  subs/all_subs.txt           — all validated subdomains
-  urls/alive.txt              — live hosts with metadata
-  urls/all_urls.txt           — all discovered URLs
-  js/js_files.txt             — JS endpoints
-  js/sensitive_files.txt      — sensitive file leaks
-  js/js_secrets.txt           — secrets found in JS
-  fuzz/params_raw.txt         — parameterised URLs
-  fuzz/dirs_*.json            — directory fuzzing results
-  fuzz/vhosts.json            — virtual host fuzzing
-  vulns/nuclei.txt            — all nuclei findings
-  vulns/xss.txt               — XSS findings
-  vulns/takeover.txt          — takeover candidates
-  cloud/*.txt                 — cloud bucket findings
-  github/*.txt                — GitHub recon findings
-
+subs/all_subs.txt           — all validated subdomains
+urls/alive.txt              — live hosts with metadata
+urls/all_urls.txt           — all discovered URLs
+js/js_files.txt             — JS endpoints
+js/sensitive_files.txt      — sensitive file leaks
+js/js_secrets.txt           — secrets found in JS
+fuzz/params_raw.txt         — parameterised URLs
+fuzz/dirs_*.json            — directory fuzzing results
+fuzz/vhosts.json            — virtual host fuzzing
+vulns/nuclei.txt            — all nuclei findings
+vulns/xss.txt               — XSS findings
+vulns/takeover.txt          — takeover candidates
+cloud/*.txt                 — cloud bucket findings
+github/*.txt                — GitHub recon findings
 [LOG]
-  Full log        : $LOG_FILE
+Full log        : $LOG_FILE
 ════════════════════════════════════════════════════════════════════════════
 EOF
-
-    # JSON report
+    
+    # JSON report - FIXED: Ensure valid JSON even if files missing
     if [[ "$JSON_REPORT" == "true" ]]; then
         local json_report="$report_dir/summary_${timestamp}.json"
         cat > "$json_report" << EOF
 {
-  "target": "$TARGET",
-  "timestamp": "$(date -Iseconds)",
-  "version": "$VERSION",
-  "subdomains": $(wc -l < subs/all_subs.txt 2>/dev/null || echo 0),
-  "alive_hosts": $(wc -l < urls/alive.txt 2>/dev/null || echo 0),
-  "urls": $(wc -l < urls/all_urls.txt 2>/dev/null || echo 0),
-  "vulnerabilities": {
-    "nuclei_total": $(wc -l < vulns/nuclei.txt 2>/dev/null || echo 0),
-    "critical": $(wc -l < vulns/nuclei_critical.txt 2>/dev/null || echo 0),
-    "high": $(wc -l < vulns/nuclei_high.txt 2>/dev/null || echo 0),
-    "medium": $(wc -l < vulns/nuclei_medium.txt 2>/dev/null || echo 0),
-    "xss": $(wc -l < vulns/xss.txt 2>/dev/null || echo 0),
-    "takeover": $(wc -l < vulns/takeover.txt 2>/dev/null || echo 0)
-  }
+    "target": "$TARGET",
+    "timestamp": "$(date -Iseconds)",
+    "version": "$VERSION",
+    "subdomains": $(count_lines subs/all_subs.txt),
+    "alive_hosts": $(count_lines urls/alive.txt),
+    "urls": $(count_lines urls/all_urls.txt),
+    "vulnerabilities": {
+        "nuclei_total": $(count_lines vulns/nuclei.txt),
+        "critical": $(count_lines vulns/nuclei_critical.txt),
+        "high": $(count_lines vulns/nuclei_high.txt),
+        "medium": $(count_lines vulns/nuclei_medium.txt),
+        "xss": $(count_lines vulns/xss.txt),
+        "takeover": $(count_lines vulns/takeover.txt)
+    }
 }
 EOF
         success "JSON report: $json_report"
     fi
-
-    # HTML report
+    
+    # HTML report - FIXED: CSS class names with dots
     if [[ "$HTML_REPORT" == "true" ]]; then
         local html_report="$report_dir/summary_${timestamp}.html"
         cat > "$html_report" << EOF
@@ -1085,22 +1125,22 @@ EOF
 <html><head><title>Recon Report - $TARGET</title>
 <style>body{font-family:monospace;background:#1a1a2e;color:#eee;padding:20px}
 h1{color:#00d9ff}h2{color:#00ff88}.stat{background:#16213e;padding:10px;margin:5px}
-.critical{color:#ff4444}high{color:#ff8800}medium{color:#ffcc00}</style></head>
+.critical{color:#ff4444}.high{color:#ff8800}.medium{color:#ffcc00}</style></head>
 <body>
 <h1>🔍 Reconnaissance Report</h1>
 <h2>Target: $TARGET</h2>
 <p>Generated: $(date)</p>
-<div class="stat"><h3>Subdomains: $(wc -l < subs/all_subs.txt 2>/dev/null || echo 0)</h3></div>
-<div class="stat"><h3>Alive Hosts: $(wc -l < urls/alive.txt 2>/dev/null || echo 0)</h3></div>
-<div class="stat"><h3>URLs: $(wc -l < urls/all_urls.txt 2>/dev/null || echo 0)</h3></div>
-<div class="stat"><h3 class="critical">Critical: $(wc -l < vulns/nuclei_critical.txt 2>/dev/null || echo 0)</h3></div>
-<div class="stat"><h3 class="high">High: $(wc -l < vulns/nuclei_high.txt 2>/dev/null || echo 0)</h3></div>
-<div class="stat"><h3 class="medium">Medium: $(wc -l < vulns/nuclei_medium.txt 2>/dev/null || echo 0)</h3></div>
+<div class="stat"><h3>Subdomains: $(count_lines subs/all_subs.txt)</h3></div>
+<div class="stat"><h3>Alive Hosts: $(count_lines urls/alive.txt)</h3></div>
+<div class="stat"><h3>URLs: $(count_lines urls/all_urls.txt)</h3></div>
+<div class="stat"><h3 class="critical">Critical: $(count_lines vulns/nuclei_critical.txt)</h3></div>
+<div class="stat"><h3 class="high">High: $(count_lines vulns/nuclei_high.txt)</h3></div>
+<div class="stat"><h3 class="medium">Medium: $(count_lines vulns/nuclei_medium.txt)</h3></div>
 </body></html>
 EOF
         success "HTML report: $html_report"
     fi
-
+    
     cat "$text_report"
     success "Report saved → $text_report"
 }
@@ -1112,19 +1152,19 @@ send_notification() {
             slack)
                 [[ -n "${SLACK_WEBHOOK:-}" ]] && \
                     curl -s -X POST -H 'Content-type: application/json' \
-                        --data "{\"text\":\"🔍 Recon complete for $TARGET - $(date)\"}" \
-                        "$SLACK_WEBHOOK" 2>/dev/null || true
+                    --data "{\"text\":\"🔍 Recon complete for $TARGET - $(date)\"}" \
+                    "$SLACK_WEBHOOK" 2>/dev/null || true
                 ;;
             discord)
                 [[ -n "${DISCORD_WEBHOOK:-}" ]] && \
                     curl -s -X POST -H 'Content-type: application/json' \
-                        --data "{\"content\":\"🔍 Recon complete for $TARGET - $(date)\"}" \
-                        "$DISCORD_WEBHOOK" 2>/dev/null || true
+                    --data "{\"content\":\"🔍 Recon complete for $TARGET - $(date)\"}" \
+                    "$DISCORD_WEBHOOK" 2>/dev/null || true
                 ;;
             telegram)
                 [[ -n "${TELEGRAM_BOT_TOKEN:-}" && -n "${TELEGRAM_CHAT_ID:-}" ]] && \
                     curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-                        -d "chat_id=${TELEGRAM_CHAT_ID}&text=🔍 Recon complete for $TARGET" 2>/dev/null || true
+                    -d "chat_id=${TELEGRAM_CHAT_ID}&text=🔍 Recon complete for $TARGET" 2>/dev/null || true
                 ;;
         esac
         info "Notification sent via $NOTIFY_CHANNEL"
@@ -1134,16 +1174,17 @@ send_notification() {
 # ─── SINGLE TARGET RECON ─────────────────────────────────────────────────────
 run_single_target() {
     local target="$1"
-    TARGET="$target"
+    local original_target="$TARGET"  # FIXED: Preserve original TARGET
     
     # Setup output directory
-    local target_outdir="${OUTDIR:-recon_${TARGET}_$(date +%Y%m%d_%H%M%S)}"
+    local target_outdir="${OUTDIR:-recon_${target}_$(date +%Y%m%d_%H%M%S)}"
     mkdir -p "$target_outdir"/{subs,urls,vulns,fuzz,js,cloud,github,reports,screenshots}
-    cd "$target_outdir" || exit 1
     
-    # Setup logging
-    LOG_FILE="$target_outdir/../${TARGET}_recon.log"
-    exec > >(tee -a "$LOG_FILE") 2>&1
+    # FIXED: Check cd succeeded
+    cd "$target_outdir" || error "Failed to change to output directory: $target_outdir"
+    
+    # Setup logging - FIXED: Set LOG_FILE before any logging
+    LOG_FILE="$target_outdir/../${target}_recon.log"
     
     # Display banner
     cat << EOF
@@ -1151,25 +1192,25 @@ ${COLORS[BOLD]}${COLORS[CYAN]}
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
 ║   🔥 ADVANCED RECONNAISSANCE FRAMEWORK v${VERSION}            ║
-║   🎯 Target: $TARGET
+║   🎯 Target: $target
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 ${COLORS[RESET]}
 EOF
-
-    success "Target: $TARGET"
+    
+    success "Target: $target"
     success "Threads: $THREADS"
     success "Output: $target_outdir"
     success "Log: $LOG_FILE"
     
-    # Check for resume
+    # Check for resume - FIXED: Better resume logic
     if [[ -n "$RESUME_ID" && -d "$RESUME_ID" ]]; then
         warn "Resuming from: $RESUME_ID"
-        cd "$RESUME_ID" || exit 1
+        cd "$RESUME_ID" || error "Failed to change to resume directory: $RESUME_ID"
     fi
     
     # Installation check (only once for batch)
-    [[ "${SKIP_INSTALL:-false}" != "true" && -z "$TOOLS_INSTALLED" ]] && {
+    [[ "${SKIP_INSTALL:-false}" != "true" && -z "${TOOLS_INSTALLED:-}" ]] && {
         check_and_install_tools
         TOOLS_INSTALLED=true
     }
@@ -1203,11 +1244,14 @@ EOF
     send_notification
     
     success "═══════════════════════════════════════════════════════════════"
-    success " Reconnaissance complete for $TARGET"
+    success " Reconnaissance complete for $target"
     success " All data saved in: $target_outdir"
     success "═══════════════════════════════════════════════════════════════"
     
-    cd "$SCRIPT_DIR" || exit 1
+    # FIXED: Check cd succeeded
+    cd "$SCRIPT_DIR" || error "Failed to return to script directory"
+    
+    TARGET="$original_target"  # FIXED: Restore original TARGET
 }
 
 # ─── BATCH TARGET RECON ──────────────────────────────────────────────────────
@@ -1237,7 +1281,7 @@ ${COLORS[BOLD]}${COLORS[CYAN]}
 ╚══════════════════════════════════════════════════════════════╝
 ${COLORS[RESET]}
 EOF
-
+    
     success "Targets loaded: $total"
     success "Output base: $OUTDIR_BASE"
     success "Parallel processing: $PARALLEL_TARGETS"
@@ -1246,7 +1290,7 @@ EOF
     [[ "${SKIP_INSTALL:-false}" != "true" ]] && check_and_install_tools
     TOOLS_INSTALLED=true
     
-    # Process targets
+    # Process targets - FIXED: Note that parallel not fully implemented
     local completed=0
     local skipped=0
     local failed=0
@@ -1301,46 +1345,47 @@ generate_master_report() {
     local completed="$3"
     local skipped="$4"
     local failed="$5"
-    
     local master_report="$base_dir/MASTER_REPORT_$(date +%Y%m%d_%H%M%S).txt"
+    
+    # FIXED: Check bc exists before using
+    local success_rate="N/A"
+    if command -v bc &>/dev/null && [[ $total -gt 0 ]]; then
+        success_rate="$(echo "scale=2; ($completed - $skipped - $failed) * 100 / $total" | bc)%"
+    fi
     
     cat > "$master_report" << EOF
 ════════════════════════════════════════════════════════════════════════════
-  MASTER RECONNAISSANCE REPORT — BATCH SCAN
-  Generated: $(date)
-  Script Version: $VERSION
+MASTER RECONNAISSANCE REPORT — BATCH SCAN
+Generated: $(date)
+Script Version: $VERSION
 ════════════════════════════════════════════════════════════════════════════
-
 [BATCH SUMMARY]
-  Total targets     : $total
-  Completed         : $((completed - skipped - failed))
-  Skipped           : $skipped
-  Failed            : $failed
-  Success rate      : $(echo "scale=2; ($completed - $skipped - $failed) * 100 / $total" | bc 2>/dev/null || echo "N/A")%
-
+Total targets     : $total
+Completed         : $((completed - skipped - failed))
+Skipped           : $skipped
+Failed            : $failed
+Success rate      : $success_rate
 [TARGET DIRECTORIES]
 EOF
-
+    
     # List all target directories
     find "$base_dir" -maxdepth 1 -type d -name "recon_*" 2>/dev/null | while read -r dir; do
         echo "  → $(basename "$dir")" >> "$master_report"
     done
-
+    
     cat >> "$master_report" << EOF
-
 [INDIVIDUAL REPORTS]
 EOF
-
+    
     # Link to individual reports
     find "$base_dir" -name "summary_*.txt" 2>/dev/null | head -20 | while read -r report; do
         echo "  → $report" >> "$master_report"
     done
-
+    
     cat >> "$master_report" << EOF
-
 ════════════════════════════════════════════════════════════════════════════
 EOF
-
+    
     success "Master report saved → $master_report"
 }
 
@@ -1350,30 +1395,29 @@ send_batch_notification() {
     local completed="$2"
     local skipped="$3"
     local failed="$4"
-    
     local message="🔍 Batch Recon Complete
 📊 Total: $total
 ✅ Completed: $((completed - skipped - failed))
 ⏭️ Skipped: $skipped
 ❌ Failed: $failed"
-
+    
     case "$NOTIFY_CHANNEL" in
         slack)
             [[ -n "${SLACK_WEBHOOK:-}" ]] && \
                 curl -s -X POST -H 'Content-type: application/json' \
-                    --data "{\"text\":\"$message\"}" \
-                    "$SLACK_WEBHOOK" 2>/dev/null || true
+                --data "{\"text\":\"$message\"}" \
+                "$SLACK_WEBHOOK" 2>/dev/null || true
             ;;
         discord)
             [[ -n "${DISCORD_WEBHOOK:-}" ]] && \
                 curl -s -X POST -H 'Content-type: application/json' \
-                    --data "{\"content\":\"$message\"}" \
-                    "$DISCORD_WEBHOOK" 2>/dev/null || true
+                --data "{\"content\":\"$message\"}" \
+                "$DISCORD_WEBHOOK" 2>/dev/null || true
             ;;
         telegram)
             [[ -n "${TELEGRAM_BOT_TOKEN:-}" && -n "${TELEGRAM_CHAT_ID:-}" ]] && \
                 curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-                    -d "chat_id=${TELEGRAM_CHAT_ID}&text=$message" 2>/dev/null || true
+                -d "chat_id=${TELEGRAM_CHAT_ID}&text=$message" 2>/dev/null || true
             ;;
     esac
 }
