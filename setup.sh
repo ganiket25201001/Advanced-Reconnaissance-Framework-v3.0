@@ -344,8 +344,19 @@ install_tools_interactive() {
 
     info "This may take 10-15 minutes..."
 
-    apt-get update -qq
-    apt-get install -y -qq git curl jq wget python3 python3-pip amass nmap bc 2>/dev/null || true
+    # Check if running as root for apt operations
+    if [[ $EUID -eq 0 ]]; then
+        apt-get update -qq
+        apt-get install -y -qq git curl jq wget python3 python3-pip amass nmap bc 2>/dev/null || true
+    else
+        info "Installing Python tools (system-wide requires sudo)..."
+        pip3 install --break-system-packages -q wafw00f sqlmap whatweb 2>/dev/null || \
+            pip3 install -q wafw00f sqlmap whatweb 2>/dev/null || \
+            warn "Some Python packages failed to install"
+        echo
+        warn "For full tool installation, run: sudo ./setup.sh"
+        return 0
+    fi
 
     pip3 install --break-system-packages -q wafw00f sqlmap whatweb 2>/dev/null || true
 
@@ -435,11 +446,11 @@ main() {
             echo
             info "ARF Setup - Two modes:"
             echo
-            echo "  ${GREEN}1. Install (requires sudo):${RESET}"
-            echo "     sudo ./setup.sh"
+            echo -e "  ${GREEN}1. Install (requires sudo):${RESET}"
+            echo -e "     sudo ./setup.sh"
             echo
-            echo "  ${GREEN}2. Configure (as regular user):${RESET}"
-            echo "     ./setup.sh --config"
+            echo -e "  ${GREEN}2. Configure (as regular user):${RESET}"
+            echo -e "     ./setup.sh --config"
             echo
             echo "Run with --help for more information."
             echo

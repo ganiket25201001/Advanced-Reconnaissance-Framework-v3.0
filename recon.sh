@@ -668,9 +668,9 @@ EOF
 EOF
     
     success "WAF bypass payloads generated in: $bypass_dir"
-    
+
     # Run FFUF with bypass headers if URLs available
-    if [[ -f "urls/alive_urls.txt" && command -v ffuf &>/dev/null ]]; then
+    if [[ -f "urls/alive_urls.txt" ]] && command -v ffuf &>/dev/null; then
         info "Testing WAF bypass on live hosts..."
         head -10 urls/alive_urls.txt | while read -r url; do
             ffuf -u "$url" \
