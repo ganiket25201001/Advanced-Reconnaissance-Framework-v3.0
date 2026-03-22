@@ -1,4 +1,4 @@
-# 🔥 Advanced Reconnaissance Framework v3.0
+# 🚀 ARF - Advanced Reconnaissance Framework v3.0
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-3.0.0-blue.svg" alt="Version">
@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  🔐 <strong>Requires Sudo</strong> | 📁 <strong>Multi-Target</strong> | 🛡️ <strong>WAF Bypass</strong> | ⚡ <strong>One-Command Install</strong>
+  🔐 <strong>Requires Sudo</strong> | 📁 <strong>Multi-Target</strong> | 🛡️ <strong>WAF Bypass</strong> | ⚡ <strong>One-Command Setup</strong>
 </p>
 
 ---
@@ -45,7 +45,7 @@
 git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
 cd Advanced-Reconnaissance-Framework-v3.0
 
-# Run installer (requires sudo)
+# Run setup (requires sudo)
 sudo ./setup.sh
 
 # Run configuration wizard (as regular user)
@@ -55,20 +55,14 @@ sudo ./setup.sh
 sudo arf example.com
 ```
 
-### Alternative: Manual Setup
+### Verify Installation
 
 ```bash
-# Make scripts executable
-chmod +x recon.sh setup.sh
+# Check arf help
+arf --help
 
-# Run installer (requires sudo)
-sudo ./setup.sh
-
-# Run configuration wizard (as regular user)
-./setup.sh --config
-
-# Scan a target
-sudo arf example.com --waf-bypass --html-report
+# Check version
+arf --version
 ```
 
 ---
@@ -152,42 +146,38 @@ The script automatically installs these tools if missing:
 
 ## 🛠️ Installation
 
-### Option 1: One-Command Setup (Recommended)
+### One-Command Setup (Recommended)
 
 ```bash
 # Clone repository
 git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
 cd Advanced-Reconnaissance-Framework-v3.0
 
-# Run setup (requires sudo)
+# Step 1: Install dependencies and tools (requires sudo)
 sudo ./setup.sh
 
-# Configure (as regular user)
+# Step 2: Configure ARF (as regular user)
 ./setup.sh --config
+
+# Step 3: Start scanning!
+sudo arf example.com
 ```
 
-### Option 2: Manual Installation
+### Manual Installation (if setup.sh fails)
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
-cd Advanced-Reconnaissance-Framework-v3.0
-
-# 2. Make scripts executable
-chmod +x recon.sh setup.sh
-
-# 3. Install system dependencies
+# 1. Install system dependencies
 sudo apt-get update
 sudo apt-get install -y git curl jq wget python3 python3-pip bc
 
-# 4. Install Go (if not installed)
+# 2. Install Go
 GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | head -n1)
 wget "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz"
 sudo tar -C /usr/local -xzf "${GO_VERSION}.linux-amd64.tar.gz"
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 source ~/.bashrc
 
-# 5. Run configuration wizard
+# 3. Run configuration wizard
 ./setup.sh --config
 ```
 
@@ -210,10 +200,10 @@ ls -la ~/.recon_config ~/api_keys.sh
 
 ### Interactive Setup Wizard
 
-Run the configuration wizard after installation:
+After installation, run the configuration wizard:
 
 ```bash
-# Run setup wizard
+# Run setup wizard (as regular user, NOT root)
 ./setup.sh --config
 ```
 
@@ -245,6 +235,17 @@ nano ~/api_keys.sh
 
 # Set secure permissions
 chmod 600 ~/.recon_config ~/api_keys.sh
+```
+
+### Quick Test
+
+```bash
+# Test arf help (works without sudo)
+arf --help
+arf -h
+
+# Check version
+arf --version
 ```
 
 ### Configuration Options
@@ -729,6 +730,7 @@ sudo arf -f targets.txt --notify discord
 | **WAF blocking** | Enable `--waf-bypass`, use `--tor` |
 | **Setup wizard fails** | Run as regular user (not root) |
 | **bc not found** | Install with `sudo apt-get install bc` |
+| **arf command not found** | Run `sudo ./setup.sh` to install |
 
 ### Debug Mode
 
@@ -750,7 +752,7 @@ sudo arf target.com --quiet
 which subfinder httpx nuclei ffuf dnsx naabu
 
 # Reinstall tools
-sudo arf target.com --skip-install
+sudo ./setup.sh
 
 # Update nuclei templates
 nuclei -update-templates
@@ -777,6 +779,22 @@ rm ~/.recon_config ~/api_keys.sh
 
 # Run setup wizard again
 ./setup.sh --config
+```
+
+### Common Errors
+
+**Error: `unexpected token conditional binary operator expected`**
+```
+Solution: Reinstall arf command
+  sudo cp recon.sh /usr/local/bin/arf
+  sudo chmod +x /usr/local/bin/arf
+```
+
+**Error: `Could not open lock file /var/lib/apt/lists/lock`**
+```
+Solution: Tool installation in --config mode needs sudo
+  Run: sudo ./setup.sh  (for full installation)
+  Then: ./setup.sh --config  (for configuration)
 ```
 
 ---
