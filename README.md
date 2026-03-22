@@ -45,27 +45,30 @@
 git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
 cd Advanced-Reconnaissance-Framework-v3.0
 
-# Run one-command installer (requires sudo)
-sudo ./install.sh
+# Run installer (requires sudo)
+sudo ./setup.sh
 
-# Run interactive setup wizard (as regular user)
-./setup_config.sh
+# Run configuration wizard (as regular user)
+./setup.sh --config
 
 # Start scanning!
-sudo ./recon.sh example.com
+sudo arf example.com
 ```
 
 ### Alternative: Manual Setup
 
 ```bash
 # Make scripts executable
-chmod +x recon.sh setup_config.sh install.sh
+chmod +x recon.sh setup.sh
 
-# Run setup wizard
-./setup_config.sh
+# Run installer (requires sudo)
+sudo ./setup.sh
+
+# Run configuration wizard (as regular user)
+./setup.sh --config
 
 # Scan a target
-sudo ./recon.sh example.com --waf-bypass --html-report
+sudo arf example.com --waf-bypass --html-report
 ```
 
 ---
@@ -149,18 +152,18 @@ The script automatically installs these tools if missing:
 
 ## 🛠️ Installation
 
-### Option 1: One-Command Installer (Recommended)
+### Option 1: One-Command Setup (Recommended)
 
 ```bash
 # Clone repository
 git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v3.0.git
 cd Advanced-Reconnaissance-Framework-v3.0
 
-# Run installer (requires sudo)
-sudo ./install.sh
+# Run setup (requires sudo)
+sudo ./setup.sh
 
-# Run setup wizard (as regular user)
-./setup_config.sh
+# Configure (as regular user)
+./setup.sh --config
 ```
 
 ### Option 2: Manual Installation
@@ -171,30 +174,21 @@ git clone https://github.com/ganiket25201001/Advanced-Reconnaissance-Framework-v
 cd Advanced-Reconnaissance-Framework-v3.0
 
 # 2. Make scripts executable
-chmod +x recon.sh setup_config.sh
+chmod +x recon.sh setup.sh
 
 # 3. Install system dependencies
 sudo apt-get update
 sudo apt-get install -y git curl jq wget python3 python3-pip bc
 
-# 4. Install Go (if not installed) - Dynamic version
+# 4. Install Go (if not installed)
 GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | head -n1)
 wget "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz"
 sudo tar -C /usr/local -xzf "${GO_VERSION}.linux-amd64.tar.gz"
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
 source ~/.bashrc
 
-# 5. Run setup wizard
-./setup_config.sh
-```
-
-### Option 3: Docker (Coming Soon)
-
-```bash
-# Docker support planned for v3.1
-docker pull recon-framework:latest
-docker run -it recon-framework ./recon.sh example.com
+# 5. Run configuration wizard
+./setup.sh --config
 ```
 
 ### Verify Installation
@@ -203,8 +197,8 @@ docker run -it recon-framework ./recon.sh example.com
 # Check Go installation
 go version
 
-# Check script help
-sudo ./recon.sh --help
+# Check arf help
+arf --help
 
 # Verify setup
 ls -la ~/.recon_config ~/api_keys.sh
@@ -216,14 +210,14 @@ ls -la ~/.recon_config ~/api_keys.sh
 
 ### Interactive Setup Wizard
 
-The setup wizard (`setup_config.sh`) guides you through configuration:
+Run the configuration wizard after installation:
 
 ```bash
 # Run setup wizard
-./setup_config.sh
+./setup.sh --config
 ```
 
-**The wizard will ask you about:**
+**The wizard will guide you through:**
 
 1. ✅ Thread & performance settings
 2. ✅ Scanning mode preferences (stealth/aggressive)
@@ -291,10 +285,13 @@ GITHUB_TOKEN="your_token"
 
 ```bash
 # Single target
-sudo ./recon.sh <target.com> [options]
+sudo arf <target.com> [options]
 
 # Multiple targets from file
-sudo ./recon.sh -f targets.txt [options]
+sudo arf -f targets.txt [options]
+
+# Or use recon.sh directly
+sudo ./recon.sh <target.com> [options]
 ```
 
 ### Command Line Options
@@ -333,25 +330,25 @@ sudo ./recon.sh -f targets.txt [options]
 
 ```bash
 # Basic scan
-sudo ./recon.sh example.com
+sudo arf example.com
 
 # With WAF bypass and HTML report
-sudo ./recon.sh example.com --waf-bypass --html-report
+sudo arf example.com --waf-bypass --html-report
 
 # Full aggressive scan
-sudo ./recon.sh example.com --aggressive --html-report --json-report
+sudo arf example.com --aggressive --html-report --json-report
 
 # Stealth mode
-sudo ./recon.sh example.com --stealth --threads 50 --rate-limit 10
+sudo arf example.com --stealth --threads 50 --rate-limit 10
 
 # With API keys
-sudo ./recon.sh example.com --api-keys ~/api_keys.sh
+sudo arf example.com --api-keys ~/api_keys.sh
 
 # Through proxy
-sudo ./recon.sh example.com --proxy http://127.0.0.1:8080
+sudo arf example.com --proxy http://127.0.0.1:8080
 
 # Through Tor
-sudo ./recon.sh example.com --tor --stealth
+sudo arf example.com --tor --stealth
 ```
 
 #### Multi-Target Scans
@@ -365,16 +362,16 @@ test.example.org
 EOF
 
 # Basic batch scan
-sudo ./recon.sh -f targets.txt
+sudo arf -f targets.txt
 
 # Parallel processing (3 targets at once)
-sudo ./recon.sh -f targets.txt --parallel 3
+sudo arf -f targets.txt --parallel 3
 
 # Skip already completed targets
-sudo ./recon.sh -f targets.txt --skip-done
+sudo arf -f targets.txt --skip-done
 
 # Full batch with all features
-sudo ./recon.sh -f targets.txt \
+sudo arf -f targets.txt \
     --parallel 3 \
     --waf-bypass \
     --html-report \
@@ -387,19 +384,19 @@ sudo ./recon.sh -f targets.txt \
 
 ```bash
 # Resume interrupted scan
-sudo ./recon.sh example.com --resume recon_example.com_20260320_120000
+sudo arf example.com --resume recon_example.com_20260320_120000
 
 # Custom output directory
-sudo ./recon.sh example.com --output /path/to/output
+sudo arf example.com --output /path/to/output
 
 # With scope file (bug bounty)
-sudo ./recon.sh example.com --scope scope.txt
+sudo arf example.com --scope scope.txt
 
 # Debug mode
-sudo ./recon.sh example.com --debug
+sudo arf example.com --debug
 
 # Quiet mode (minimal output)
-sudo ./recon.sh example.com --quiet
+sudo arf example.com --quiet
 ```
 
 ---
@@ -691,16 +688,16 @@ export TELEGRAM_CHAT_ID="-1001234567890"
 
 ```bash
 # Slack notification
-sudo ./recon.sh target.com --notify slack
+sudo arf target.com --notify slack
 
 # Discord notification
-sudo ./recon.sh target.com --notify discord
+sudo arf target.com --notify discord
 
 # Telegram notification
-sudo ./recon.sh target.com --notify telegram
+sudo arf target.com --notify telegram
 
 # Batch with notification
-sudo ./recon.sh -f targets.txt --notify discord
+sudo arf -f targets.txt --notify discord
 ```
 
 ### Sample Notification
@@ -737,13 +734,13 @@ sudo ./recon.sh -f targets.txt --notify discord
 
 ```bash
 # Enable debug logging
-sudo ./recon.sh target.com --debug
+sudo arf target.com --debug
 
 # Check logs
 cat target.com_recon.log
 
 # Minimal output
-sudo ./recon.sh target.com --quiet
+sudo arf target.com --quiet
 ```
 
 ### Tool Verification
@@ -753,7 +750,7 @@ sudo ./recon.sh target.com --quiet
 which subfinder httpx nuclei ffuf dnsx naabu
 
 # Reinstall tools
-sudo ./recon.sh target.com --skip-install
+sudo arf target.com --skip-install
 
 # Update nuclei templates
 nuclei -update-templates
@@ -763,13 +760,13 @@ nuclei -update-templates
 
 ```bash
 # Low-resource system (4GB RAM)
-sudo ./recon.sh target.com --stealth --threads 50 --rate-limit 10
+sudo arf target.com --stealth --threads 50 --rate-limit 10
 
 # Medium system (8GB RAM)
-sudo ./recon.sh target.com --threads 200 --rate-limit 50
+sudo arf target.com --threads 200 --rate-limit 50
 
 # High-performance system (16GB+ RAM)
-sudo ./recon.sh target.com --aggressive --threads 500 --rate-limit 150
+sudo arf target.com --aggressive --threads 500 --rate-limit 150
 ```
 
 ### Reset Configuration
@@ -779,7 +776,7 @@ sudo ./recon.sh target.com --aggressive --threads 500 --rate-limit 150
 rm ~/.recon_config ~/api_keys.sh
 
 # Run setup wizard again
-./setup_config.sh
+./setup.sh --config
 ```
 
 ---
@@ -788,14 +785,17 @@ rm ~/.recon_config ~/api_keys.sh
 
 ```
 Advanced-Reconnaissance-Framework-v3.0/
-├── recon.sh              # Main reconnaissance script
-├── setup_config.sh       # Interactive configuration wizard
-├── install.sh            # One-command installer
-├── targets.txt.example   # Sample targets file
-├── README.md             # This documentation
-├── LICENSE               # MIT License
-└── .gitignore            # Git ignore rules
+├── recon.sh              # 🚀 Main script with built-in help (run as: arf)
+├── setup.sh              # ⚙️  Setup script (install + configure)
+├── targets.txt.example   # 📁 Sample targets file (auto-generated)
+├── README.md             # 📖 This documentation
+├── LICENSE               # 📄 MIT License
+└── .gitignore            # 🚫 Git ignore rules
 ```
+
+**After installation:**
+- `arf` command is installed to `/usr/local/bin/arf`
+- Config files are created in your home directory (`~/.recon_config`, `~/api_keys.sh`)
 
 ---
 

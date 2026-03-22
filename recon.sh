@@ -1,9 +1,9 @@
 #!/bin/bash
 # ════════════════════════════════════════════════════════════════════════════
-# 🔥 ADVANCED FULL-SCOPE RECON + WAF BYPASS FRAMEWORK v3.0
+# 🚀 ARF - ADVANCED RECONNAISSANCE FRAMEWORK v3.0
 # 🔐 AUTHORIZED USE ONLY - REQUIRE SUDO PRIVILEGES
 # 📅 Updated: March 2026
-# 📁 NOW SUPPORTS MULTI-TARGET FILES (-f/--targets)
+# 📁 MULTI-TARGET FILES (-f/--targets) | WAF BYPASS | HTML REPORTS
 # ════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -11,7 +11,6 @@ set -euo pipefail
 readonly VERSION="3.0.0"
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# FIXED: Not readonly, can be overridden by --config
 CONFIG_FILE="${HOME}/.recon_config"
 readonly LOCK_FILE="/tmp/recon_$$.lock"
 
@@ -159,67 +158,119 @@ parse_args() {
 }
 
 show_help() {
+    # Banner
+    echo -e "${COLORS[BOLD]}${COLORS[CYAN]}╔══════════════════════════════════════════════════════════════╗${COLORS[RESET]}"
+    echo -e "${COLORS[BOLD]}${COLORS[CYAN]}║${COLORS[RESET]}                                                              ${COLORS[BOLD]}${COLORS[CYAN]}║${COLORS[RESET]}"
+    echo -e "${COLORS[BOLD]}${COLORS[CYAN]}║${COLORS[RESET]}  ${COLORS[BOLD]}🚀 ARF - Advanced Reconnaissance Framework v${VERSION}           ${COLORS[RESET]}  ${COLORS[BOLD]}${COLORS[CYAN]}║${COLORS[RESET]}"
+    echo -e "${COLORS[BOLD]}${COLORS[CYAN]}║${COLORS[RESET]}  ${COLORS[DIM]}Enterprise-grade reconnaissance & vulnerability scanner${COLORS[RESET]}   ${COLORS[BOLD]}${COLORS[CYAN]}║${COLORS[RESET]}"
+    echo -e "${COLORS[BOLD]}${COLORS[CYAN]}║${COLORS[RESET]}                                                              ${COLORS[BOLD]}${COLORS[CYAN]}║${COLORS[RESET]}"
+    echo -e "${COLORS[BOLD]}${COLORS[CYAN]}╚══════════════════════════════════════════════════════════════╝${COLORS[RESET]}"
+    echo
     cat << EOF
-${COLORS[BOLD]}${COLORS[CYAN]}╔══════════════════════════════════════════════════════════════╗
-║     ADVANCED RECONNAISSANCE FRAMEWORK v${VERSION}                  ║
-║     📁 MULTI-TARGET FILE SUPPORT ADDED!                            ║
-╚══════════════════════════════════════════════════════════════╝${COLORS[RESET]}
-
 ${COLORS[BOLD]}USAGE:${COLORS[RESET]}
-    sudo $0 <target.com> [options]
-    sudo $0 -f targets.txt [options]
+    sudo arf <target.com> [options]
+    sudo arf -f targets.txt [options]
 
 ${COLORS[BOLD]}REQUIRED (ONE OF):${COLORS[RESET]}
     <target.com>          Single target domain (e.g., example.com)
     -f, --targets FILE    File containing multiple targets (one per line)
 
-${COLORS[BOLD]}OPTIONS:${COLORS[RESET]}
+${COLORS[BOLD]}CORE OPTIONS:${COLORS[RESET]}
     --threads N           Number of concurrent threads (default: 200)
-    --scope FILE          Scope file with allowed domains
     --output DIR          Output directory (default: recon_<target>_<timestamp>)
     --config FILE         Configuration file (default: ~/.recon_config)
-    --proxy URL           HTTP/HTTPS proxy URL
-    --tor                 Route traffic through Tor
-    --rate-limit N        Requests per second (default: 50)
-    --depth N             Crawl depth (default: 5)
-    --timeout N           Request timeout in seconds (default: 10)
     --api-keys FILE       File containing API keys
+    --scope FILE          Scope file with allowed domains (bug bounty)
+
+${COLORS[BOLD]}PERFORMANCE & NETWORK:${COLORS[RESET]}
+    --rate-limit N        Requests per second (default: 50)
+    --depth N             Crawl depth for URL discovery (default: 5)
+    --timeout N           Request timeout in seconds (default: 10)
+    --proxy URL           HTTP/HTTPS proxy URL
+    --tor                 Route traffic through Tor network
+    --parallel N          Process N targets in parallel (default: 1)
+
+${COLORS[BOLD]}SCANNING MODES:${COLORS[RESET]}
     --waf-bypass          Enable WAF detection and bypass techniques
-    --aggressive          Aggressive scanning mode (more noise)
+    --aggressive          Aggressive mode (faster, more detectable)
     --stealth             Stealth mode (slower, less detectable)
-    --resume ID           Resume previous scan by ID
-    --notify CHANNEL      Notification channel (slack/discord/telegram)
+
+${COLORS[BOLD]}REPORTING & OUTPUT:${COLORS[RESET]}
     --html-report         Generate HTML report
     --json-report         Generate JSON report
-    --skip-install        Skip tool installation check
     --debug               Enable debug logging
-    --quiet               Minimal output
-    --parallel N          Process N targets in parallel (default: 1)
-    --skip-done           Skip targets that already have completed reports
-    --help, -h            Show this help message
-    --version, -v         Show version
+    --quiet               Minimal output (errors only)
 
-${COLORS[BOLD]}TARGETS FILE FORMAT:${COLORS[RESET]}
-    # Comments start with #
-    example.com
-    test.example.com
-    api.example.com
-    subdomain.example.org
+${COLORS[BOLD]}BATCH PROCESSING:${COLORS[RESET]}
+    --skip-done           Skip targets that already have completed reports
+    --resume ID           Resume previous scan by ID
+
+${COLORS[BOLD]}NOTIFICATIONS:${COLORS[RESET]}
+    --notify CHANNEL      Notification channel (slack/discord/telegram)
+
+${COLORS[BOLD]}GENERAL:${COLORS[RESET]}
+    --skip-install        Skip tool installation check
+    --help, -h            Show this help message
+    --version, -v         Show version information
 
 ${COLORS[BOLD]}EXAMPLES:${COLORS[RESET]}
-    # Single target
-    sudo $0 example.com
-    
-    # Multiple targets from file
-    sudo $0 -f targets.txt
-    
-    # With WAF bypass and parallel processing
-    sudo $0 -f targets.txt --waf-bypass --parallel 3 --html-report
-    
-    # Stealth mode with API keys
-    sudo $0 -f targets.txt --stealth --api-keys keys.sh --notify discord
+    ${COLORS[DIM]}# Basic scan of a single target${COLORS[RESET]}
+    sudo arf example.com
 
-${COLORS[BOLD]}NOTE:${COLORS[RESET]} This script requires sudo privileges for network operations.
+    ${COLORS[DIM]}# Scan with WAF bypass and HTML report${COLORS[RESET]}
+    sudo arf example.com --waf-bypass --html-report
+
+    ${COLORS[DIM]}# Scan multiple targets from file${COLORS[RESET]}
+    sudo arf -f targets.txt
+
+    ${COLORS[DIM]}# Parallel batch scan with notifications${COLORS[RESET]}
+    sudo arf -f targets.txt --parallel 3 --notify discord --html-report
+
+    ${COLORS[DIM]}# Stealth mode scan (low-profile)${COLORS[RESET]}
+    sudo arf example.com --stealth --threads 50 --rate-limit 10
+
+    ${COLORS[DIM]}# Aggressive full scan with all reports${COLORS[RESET]}
+    sudo arf example.com --aggressive --html-report --json-report --api-keys ~/api_keys.sh
+
+    ${COLORS[DIM]}# Scan through Tor${COLORS[RESET]}
+    sudo arf example.com --tor --stealth
+
+    ${COLORS[DIM]}# Scan with custom output directory${COLORS[RESET]}
+    sudo arf example.com --output /path/to/results
+
+${COLORS[BOLD]}TARGETS FILE FORMAT:${COLORS[RESET]}
+    ${COLORS[DIM]}# Comments start with #${COLORS[RESET]}
+    ${COLORS[DIM]}example.com${COLORS[RESET]}
+    ${COLORS[DIM]}api.example.com${COLORS[RESET]}
+    ${COLORS[DIM]}test.example.org${COLORS[RESET]}
+
+${COLORS[BOLD]}QUICK START:${COLORS[RESET]}
+    ${COLORS[CYAN]}1.${COLORS[RESET]} Run setup:          ${COLORS[GREEN]}sudo arf --setup${COLORS[RESET]}
+    ${COLORS[CYAN]}2.${COLORS[RESET]} Edit config:        ${COLORS[GREEN]}nano ~/.recon_config${COLORS[RESET]}
+    ${COLORS[CYAN]}3.${COLORS[RESET]} Add API keys:       ${COLORS[GREEN]}nano ~/api_keys.sh${COLORS[RESET]}
+    ${COLORS[CYAN]}4.${COLORS[RESET]} Start scanning:     ${COLORS[GREEN]}sudo arf example.com${COLORS[RESET]}
+
+${COLORS[BOLD]}OUTPUT STRUCTURE:${COLORS[RESET]}
+    ${COLORS[DIM]}recon_<target>_<timestamp>/${COLORS[RESET]}
+    ├── ${COLORS[DIM]}subs/${COLORS[RESET]}         # Subdomain enumeration results
+    ├── ${COLORS[DIM]}urls/${COLORS[RESET]}         # Live hosts and URLs
+    ├── ${COLORS[DIM]}fuzz/${COLORS[RESET]}         # Directory/parameter fuzzing results
+    ├── ${COLORS[DIM]}js/${COLORS[RESET]}           # JavaScript analysis
+    ├── ${COLORS[DIM]}vulns/${COLORS[RESET]}        # Vulnerability findings
+    ├── ${COLORS[DIM]}cloud/${COLORS[RESET]}        # Cloud bucket discoveries
+    ├── ${COLORS[DIM]}github/${COLORS[RESET]}       # GitHub dorking results
+    ├── ${COLORS[DIM]}screenshots/${COLORS[RESET]}  # Website screenshots
+    └── ${COLORS[DIM]}reports/${COLORS[RESET]}      # Summary reports (txt/json/html)
+
+${COLORS[BOLD]}IMPORTANT NOTES:${COLORS[RESET]}
+    ${COLORS[YELLOW]}!${COLORS[RESET]} This tool requires ${COLORS[BOLD]}sudo${COLORS[RESET]} privileges for network operations
+    ${COLORS[YELLOW]}!${COLORS[RESET]} Only scan targets you ${COLORS[BOLD]}own${COLORS[RESET]} or have ${COLORS[BOLD]}written permission${COLORS[RESET]} to test
+    ${COLORS[YELLOW]}!${COLORS[RESET]} Keep API keys secure: ${COLORS[GREEN]}chmod 600 ~/api_keys.sh${COLORS[RESET]}
+
+${COLORS[BOLD]}LEGAL DISCLAIMER:${COLORS[RESET]}
+    ${COLORS[RED]}⚠️  This tool is for authorized security testing only.${COLORS[RESET]}
+    ${COLORS[RED]}   Unauthorized scanning of systems is illegal and may result in prosecution.${COLORS[RESET]}
+
 EOF
 }
 
@@ -1424,11 +1475,36 @@ send_batch_notification() {
 
 # ─── MAIN EXECUTION ──────────────────────────────────────────────────────────
 main() {
+    # Handle help/version BEFORE sudo check for better UX
+    if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
+        show_help
+        exit 0
+    fi
+
+    if [[ "${1:-}" == "-v" ]] || [[ "${1:-}" == "--version" ]]; then
+        echo -e "${COLORS[BOLD]}🚀 ARF - Advanced Reconnaissance Framework${COLORS[RESET]}"
+        echo -e "${COLORS[DIM]}Version:${COLORS[RESET]} ${VERSION}"
+        echo
+        echo -e "${COLORS[DIM]}Run:${COLORS[RESET]} ${COLORS[GREEN]}sudo arf --help${COLORS[RESET]} for usage"
+        exit 0
+    fi
+
+    # Handle setup option
+    if [[ "${1:-}" == "--setup" ]]; then
+        if [[ -f "${SCRIPT_DIR}/setup.sh" ]]; then
+            bash "${SCRIPT_DIR}/setup.sh"
+            exit 0
+        else
+            error "setup.sh not found in ${SCRIPT_DIR}"
+        fi
+    fi
+
+    # Require sudo for actual scanning
     enforce_sudo
     parse_args "$@"
     load_config
     load_api_keys
-    
+
     if [[ -n "$TARGETS_FILE" ]]; then
         # Batch mode
         run_batch_targets "$TARGETS_FILE"
