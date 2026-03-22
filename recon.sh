@@ -359,9 +359,9 @@ parse_targets_file() {
 is_target_completed() {
     local target="$1"
     local base_dir="${OUTDIR_BASE:-recon_batch}"
-    
-    # Check if report exists
-    [[ -f "${base_dir}/recon_${target}_*/reports/summary_*.txt" ]] && return 0
+
+    # Check if any summary report exists for this target
+    compgen -G "${base_dir}/recon_${target}_*/reports/summary_*.txt" > /dev/null && return 0
     return 1
 }
 
@@ -1226,6 +1226,9 @@ send_notification() {
 run_single_target() {
     local target="$1"
     local original_target="$TARGET"  # FIXED: Preserve original TARGET
+
+    # Ensure all scan functions operate on the current target in batch mode.
+    TARGET="$target"
     
     # Setup output directory
     local target_outdir="${OUTDIR:-recon_${target}_$(date +%Y%m%d_%H%M%S)}"
@@ -1362,7 +1365,7 @@ EOF
         if run_single_target "$target"; then
             success "[$completed/$total] Completed: $target"
         else
-            error "[$completed/$total] Failed: $target"
+            warn "[$completed/$total] Failed: $target"
             ((failed++))
         fi
         
@@ -1377,7 +1380,7 @@ EOF
     success "Total targets: $total"
     success "Completed: $((completed - skipped - failed))"
     warn "Skipped: $skipped"
-    error "Failed: $failed" 2>/dev/null || true
+    warn "Failed: $failed"
     success "All data saved in: $OUTDIR_BASE"
     
     # Generate master report
